@@ -1,0 +1,18 @@
+# Dependencies
+FE/node_modules/
+BE/node_modules/
+
+# Build output
+FE/dist/
+
+# Environment variables (nhạy cảm - KHÔNG push lên git)
+FE/.env
+BE/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
