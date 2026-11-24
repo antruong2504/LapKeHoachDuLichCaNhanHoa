@@ -1,0 +1,28 @@
+$kind: http-request
+name: 02 - Auth Login Customer
+order: 2000
+method: POST
+url: '{{baseUrl}}/api/auth/login'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |
+    {
+      "ten_dang_nhap": "customer",
+      "mat_khau": "Customer@123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Login customer returns 200', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      pm.test('Customer JWT token returned', function () {
+        const token = json.token || json.data?.token;
+        pm.expect(token).to.be.a('string').and.not.empty;
+        pm.collectionVariables.set('customerToken', token);
+      });

@@ -1,4 +1,4 @@
-import { getWeatherForecast } from '../services/weatherService.js';
+import { getWeatherForecast, geocodeCityName } from '../services/weatherService.js';
 import prisma from '../config/db.js';
 
 // @desc  Lấy dự báo thời tiết 5 ngày (PB07, UI_06, UI_11)
@@ -41,8 +41,17 @@ export const getWeather = async (req, res) => {
         lat = cityCoords[match].lat;
         lon = cityCoords[match].lon;
       } else {
-        lat = 16.0544;
-        lon = 108.2022;
+        const geo = await geocodeCityName(cityName);
+        if (geo) {
+          lat = geo.lat;
+          lon = geo.lon;
+          cityName = geo.resolvedName || cityName;
+        } else {
+          return res.status(404).json({
+            success: false,
+            message: `Không tìm thấy vị trí "${cityName}". Vui lòng thử tên tỉnh thành hoặc địa danh khác.`,
+          });
+        }
       }
     }
 

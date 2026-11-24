@@ -91,11 +91,11 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">
             <BarChart3 className="w-4 h-4" />
-            <span>Bảng điều khiển & Báo cáo UTC+7 • PB18 (UI_26)</span>
+            <span>Tổng quan hệ thống</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Tổng quan hệ thống TripMate</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Số liệu thời gian thực từ Supabase PostgreSQL theo múi giờ Việt Nam (Asia/Ho_Chi_Minh).
+            Thống kê hoạt động người dùng, lịch trình và đánh giá.
           </p>
         </div>
 
@@ -216,7 +216,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-teal-600" />
                 <h2 className="text-base font-bold text-slate-900">
-                  Biểu đồ tăng trưởng người dùng & lịch trình (UTC+7)
+                  Biểu đồ tăng trưởng người dùng & lịch trình
                 </h2>
               </div>
               <div className="h-72 w-full">

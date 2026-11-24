@@ -1,0 +1,25 @@
+$kind: http-request
+name: 04 - Destinations Smart Search
+order: 4000
+method: GET
+url: '{{baseUrl}}/api/destinations?search=hue&page=1&limit=10'
+queryParams:
+  - key: search
+    value: hue
+  - key: page
+    value: '1'
+  - key: limit
+    value: '10'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Status code is 200', function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test('Smart search returns matching Hue destinations', function () {
+        const json = pm.response.json();
+        pm.expect(json.success).to.eql(true);
+        pm.expect(json.data).to.be.an('array').and.not.empty;
+        pm.expect(json.pagination).to.have.property('total');
+      });

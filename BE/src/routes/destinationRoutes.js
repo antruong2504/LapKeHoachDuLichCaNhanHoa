@@ -12,6 +12,7 @@ import {
   uploadDestinationImage,
 } from '../controllers/destinationController.js';
 import { authenticate, requireAdmin } from '../middleware/authMiddleware.js';
+import { cacheResponse, invalidateOnMutation } from '../utils/memoryCache.js';
 
 const router = express.Router();
 
@@ -29,19 +30,20 @@ const upload = multer({
   },
 });
 
-// 1. Danh sách tỉnh thành phố (Public)
-router.get('/provinces', getProvinces);
+// 1. Danh sách tỉnh thành phố (Public - cache 10 phút)
+router.get('/provinces', cacheResponse('provinces:', 600_000), getProvinces);
 
-// 2. Danh sách địa điểm du lịch & Chi tiết (Public hoặc Admin)
-router.get('/', getDestinations);
-router.get('/:id', getDestinationById);
+// 2. Danh sách địa điểm du lịch & Chi tiết (Public hoặc Admin - cache 2 phút)
+router.get('/', cacheResponse('destinations:', 120_000), getDestinations);
+router.get('/:id', cacheResponse('destinations:', 120_000), getDestinationById);
 
 // 3. Nghiệp vụ Quản trị viên (PB19 - Yêu cầu Token & Vai trò admin)
-router.post('/', authenticate, requireAdmin, createDestination);
-router.put('/:id', authenticate, requireAdmin, updateDestination);
-router.patch('/:id/toggle-featured', authenticate, requireAdmin, toggleFeatured);
-router.delete('/:id', authenticate, requireAdmin, deleteDestination); // Xóa mềm
-router.patch('/:id/restore', authenticate, requireAdmin, restoreDestination); // Khôi phục xóa mềm
+const clearDestCache = invalidateOnMutation(['destinations:', 'provinces:']);
+router.post('/', authenticate, requireAdmin, clearDestCache, createDestination);
+router.put('/:id', authenticate, requireAdmin, clearDestCache, updateDestination);
+router.patch('/:id/toggle-featured', authenticate, requireAdmin, clearDestCache, toggleFeatured);
+router.delete('/:id', authenticate, requireAdmin, clearDestCache, deleteDestination); // Xóa mềm
+router.patch('/:id/restore', authenticate, requireAdmin, clearDestCache, restoreDestination); // Khôi phục xóa mềm
 router.post('/upload', authenticate, requireAdmin, upload.single('image'), uploadDestinationImage);
 
 export default router;

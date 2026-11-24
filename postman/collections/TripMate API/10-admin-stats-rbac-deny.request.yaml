@@ -1,0 +1,19 @@
+$kind: http-request
+name: 10 - Admin Stats RBAC Deny Customer
+order: 10000
+method: GET
+url: '{{baseUrl}}/api/admin/stats'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Customer is denied access with 403', function () {
+        pm.response.to.have.status(403);
+      });
+      pm.test('Error response success is false', function () {
+        const json = pm.response.json();
+        pm.expect(json.success).to.eql(false);
+      });

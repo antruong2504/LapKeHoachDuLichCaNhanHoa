@@ -231,7 +231,7 @@ export default function MapRoutePage() {
       return;
     }
     if (stops.length >= 10) {
-      alert('Lộ trình chỉ hỗ trợ tối đa 10 điểm dừng mỗi ngày theo tiêu chuẩn PB06!');
+      alert('Lộ trình chỉ hỗ trợ tối đa 10 điểm dừng mỗi ngày.');
       return;
     }
     setStops((prev) => [...prev, dest]);
@@ -324,10 +324,10 @@ export default function MapRoutePage() {
           </div>
           <div>
             <h1 className="text-base font-extrabold text-slate-900 leading-tight">
-              Bản Đồ Lộ Trình & Tối Ưu Quãng Đường (OSRM + TSP)
+              Bản Đồ Lộ Trình & Tối Ưu Quãng Đường
             </h1>
             <p className="text-xs text-slate-500">
-              Thuật toán TSP tìm thứ tự ngắn nhất · Hỗ trợ kéo thả đổi chặng linh hoạt · Tối đa 10 địa điểm/ngày
+              Sắp xếp thứ tự tham quan tối ưu · Kéo thả đổi chặng linh hoạt · Tối đa 10 điểm/ngày
             </p>
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function MapRoutePage() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>{isOptimizing ? 'Đang tối ưu hóa...' : 'Tự động tối ưu hóa (TSP)'}</span>
+            <span>{isOptimizing ? 'Đang tối ưu hóa...' : 'Tối ưu lộ trình'}</span>
           </button>
         </div>
       </div>
@@ -370,7 +370,7 @@ export default function MapRoutePage() {
                   type="text"
                   value={startPoint.ten_dia_diem}
                   onChange={(e) => setStartPoint({ ...startPoint, ten_dia_diem: e.target.value })}
-                  placeholder="Nhập tên khách sạn hoặc địa chỉ xuất phát..."
+                  placeholder="Nhập điểm xuất phát..."
                   className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
                 />
               </div>

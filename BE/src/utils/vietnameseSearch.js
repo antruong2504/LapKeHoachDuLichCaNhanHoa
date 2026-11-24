@@ -56,8 +56,8 @@ const levenshtein = (a, b) => {
 };
 
 const hasFuzzyWord = (words, token) => {
-  if (!token || token.length < 4) return false;
-  const maxDist = token.length >= 7 ? 2 : 1;
+  if (!token || token.length < 5) return false;
+  const maxDist = token.length >= 8 ? 2 : 1;
   return words.some((w) => {
     if (Math.abs(w.length - token.length) > maxDist) return false;
     return levenshtein(w, token) <= maxDist;
@@ -152,8 +152,6 @@ export const scoreDestinationSearch = (dest, rawQuery) => {
       } else if (hasFuzzyWord(primaryWords, token)) {
         tokenScore = 16;
         matchedPrimary = true;
-      } else if (hasFuzzyWord(allWords, token)) {
-        tokenScore = 6;
       }
     }
 

@@ -1,58 +1,40 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import GuestLayout from './layouts/GuestLayout';
 import AdminLayout from './layouts/AdminLayout';
 
-// Public & Customer Pages
+// Core Public Pages (eager load for instant first paint)
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import ProfilePage from './pages/ProfilePage';
-import MyTripsPage from './pages/MyTripsPage';
-import TripDetailPage from './pages/TripDetailPage';
-import DestinationsPage from './pages/DestinationsPage';
-import DestinationDetailPage from './pages/DestinationDetailPage';
-import FavoritesPage from './pages/FavoritesPage';
-import MapRoutePage from './pages/MapRoutePage';
-import WeatherPage from './pages/WeatherPage';
-import TripPlannerPage from './pages/TripPlannerPage';
-import ManualTripCreatePage from './pages/ManualTripCreatePage';
-import GuidesPage from './pages/GuidesPage';
-import ChatPage from './pages/ChatPage';
-import NotificationsPage from './pages/NotificationsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
-import AdminDestinationsPage from './pages/admin/AdminDestinationsPage';
-import AdminGuidesPage from './pages/admin/AdminGuidesPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminReviewsPage from './pages/admin/AdminReviewsPage';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+// Lazy-loaded Pages (bundle splitting for fast load)
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const MyTripsPage = lazy(() => import('./pages/MyTripsPage'));
+const TripDetailPage = lazy(() => import('./pages/TripDetailPage'));
+const DestinationsPage = lazy(() => import('./pages/DestinationsPage'));
+const DestinationDetailPage = lazy(() => import('./pages/DestinationDetailPage'));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const MapRoutePage = lazy(() => import('./pages/MapRoutePage'));
+const WeatherPage = lazy(() => import('./pages/WeatherPage'));
+const TripPlannerPage = lazy(() => import('./pages/TripPlannerPage'));
+const ManualTripCreatePage = lazy(() => import('./pages/ManualTripCreatePage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
-// Placeholder Admin Dashboard Page (PB18 / UI_26)
-const AdminDashboard = () => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-    <h2 className="text-xl font-bold text-slate-900">Tổng Quan Hệ Thống TripMate (Admin)</h2>
-    <p className="text-sm text-slate-500 mt-1">Dữ liệu thời gian thực được đồng bộ trực tiếp từ Supabase Cloud PostgreSQL (UTC+7)</p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-      <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
-        <p className="text-xs font-semibold uppercase text-teal-700">Tỉnh / Thành phố</p>
-        <p className="text-2xl font-bold text-teal-900 mt-1">7</p>
-      </div>
-      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-        <p className="text-xs font-semibold uppercase text-emerald-700">Địa điểm du lịch</p>
-        <p className="text-2xl font-bold text-emerald-900 mt-1">12</p>
-      </div>
-      <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-        <p className="text-xs font-semibold uppercase text-amber-700">Tài khoản người dùng</p>
-        <p className="text-2xl font-bold text-amber-900 mt-1">4</p>
-      </div>
-      <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
-        <p className="text-xs font-semibold uppercase text-indigo-700">Cẩm nang & Nhóm chat</p>
-        <p className="text-2xl font-bold text-indigo-900 mt-1">2</p>
-      </div>
-    </div>
+const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'));
+const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinationsPage'));
+const AdminGuidesPage = lazy(() => import('./pages/admin/AdminGuidesPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminReviewsPage = lazy(() => import('./pages/admin/AdminReviewsPage'));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="w-9 h-9 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
@@ -60,7 +42,8 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           {/* Main User & Guest Layout (UI_01 - UI_25) */}
           <Route element={<GuestLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -105,7 +88,8 @@ function App() {
 
           {/* 404 Not Found */}
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

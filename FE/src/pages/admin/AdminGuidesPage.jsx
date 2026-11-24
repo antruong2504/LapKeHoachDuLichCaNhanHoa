@@ -94,7 +94,7 @@ export default function AdminGuidesPage() {
       if (res.success) {
         setGuides((prev) => prev.filter((g) => g.id !== deletingGuide.id));
         setDeletingGuide(null);
-        showToast('Đã xóa cẩm nang, bảo toàn ảnh dùng chung & gửi thông báo UTC+7 cho tác giả.');
+        showToast('Đã xóa bài viết và gửi thông báo tới tác giả.');
       } else {
         throw new Error(res.message || 'Xóa cẩm nang thất bại');
       }
@@ -119,11 +119,11 @@ export default function AdminGuidesPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">
             <BookOpen className="w-4 h-4" />
-            <span>Quản trị nội dung • PB14 (UI_34–36)</span>
+            <span>Quản trị nội dung</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Quản lý cẩm nang du lịch</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Kiểm duyệt bài viết cộng đồng, xóa bài vi phạm kèm lý do và gửi thông báo UTC+7 tới tác giả.
+            Kiểm duyệt và quản lý bài viết cẩm nang du lịch.
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export default function AdminGuidesPage() {
                 <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="py-3.5 px-4">Bài viết cẩm nang</th>
                   <th className="py-3.5 px-4">Tác giả</th>
-                  <th className="py-3.5 px-4">Ngày đăng (UTC+7)</th>
+                  <th className="py-3.5 px-4">Ngày đăng</th>
                   <th className="py-3.5 px-4 text-center">Tương tác</th>
                   <th className="py-3.5 px-4 text-right">Thao tác</th>
                 </tr>
@@ -225,7 +225,7 @@ export default function AdminGuidesPage() {
                           type="button"
                           onClick={() => setViewingGuide(guide)}
                           className="p-2 rounded-lg text-slate-600 hover:text-teal-700 hover:bg-teal-50 transition"
-                          title="Xem chi tiết bài viết (UI_35)"
+                          title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -233,7 +233,7 @@ export default function AdminGuidesPage() {
                           type="button"
                           onClick={() => handleOpenDeleteModal(guide)}
                           className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-                          title="Xóa cẩm nang kèm lý do (UI_36)"
+                          title="Xóa bài viết"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -361,7 +361,7 @@ export default function AdminGuidesPage() {
                   required
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
-                  placeholder="Nhập lý do chi tiết để gửi thông báo UTC+7 tới tác giả..."
+                  placeholder="Nhập lý do xóa bài viết..."
                   className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
                 />
               </div>

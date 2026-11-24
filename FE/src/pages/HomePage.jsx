@@ -17,28 +17,36 @@ import destinationService from '../services/destinationService';
 import categoryService from '../services/categoryService';
 import DestinationCard from '../components/DestinationCard';
 import DestinationSkeleton from '../components/DestinationSkeleton';
+import SearchSuggestions from '../components/SearchSuggestions';
+import { normalizeVietnamese } from '../utils/vietnamese';
 
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [featuredDestinations, setFeaturedDestinations] = useState([]);
+  const [provinces, setProvinces] = useState([]);
   const [categoryTree, setCategoryTree] = useState([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   useEffect(() => {
     const loadHomeData = async () => {
       try {
-        const [destRes, catRes] = await Promise.all([
+        const [destRes, catRes, provRes] = await Promise.all([
           destinationService.getDestinations({ noi_bat: true, limit: 4 }),
           categoryService.getTree(),
+          destinationService.getProvinces(),
         ]);
         if (destRes.success && destRes.data && destRes.data.length > 0) {
           setFeaturedDestinations(destRes.data);
         }
         if (catRes.success && catRes.data) {
           setCategoryTree(catRes.data);
+        }
+        if (provRes.success && provRes.data) {
+          setProvinces(provRes.data);
         }
       } catch (err) {
         console.error('Lỗi tải dữ liệu trang chủ:', err);
@@ -48,6 +56,30 @@ export default function HomePage() {
     };
     loadHomeData();
   }, []);
+
+  const searchSuggestions = searchTerm.trim()
+    ? [
+        ...featuredDestinations
+          .filter((d) =>
+            normalizeVietnamese(d.ten_dia_diem).includes(normalizeVietnamese(searchTerm))
+          )
+          .slice(0, 3)
+          .map((d) => ({ id: d.id, label: d.ten_dia_diem, type: 'destination' })),
+        ...categoryTree
+          .flatMap((g) => g.danh_mucs || [])
+          .filter((c) =>
+            normalizeVietnamese(c.ten_danh_muc).includes(normalizeVietnamese(searchTerm))
+          )
+          .slice(0, 3)
+          .map((c) => ({ id: c.id, label: c.ten_danh_muc, type: 'category' })),
+        ...provinces
+          .filter((p) =>
+            normalizeVietnamese(p.ten_tinh_thanh).includes(normalizeVietnamese(searchTerm))
+          )
+          .slice(0, 3)
+          .map((p) => ({ id: p.id, label: p.ten_tinh_thanh, type: 'province' })),
+      ].slice(0, 7)
+    : [];
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -67,7 +99,7 @@ export default function HomePage() {
         <div className="relative max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-200 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Nền tảng ứng dụng Google Gemini AI & Supabase Cloud</span>
+            <span>Trợ lý lập kế hoạch du lịch thông minh cùng AI</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
@@ -81,15 +113,21 @@ export default function HomePage() {
             Khám phá trọn vẹn vẻ đẹp Việt Nam. TripMate tự động tối ưu hóa lộ trình di chuyển, dự báo thời tiết 5 ngày và gợi ý lịch trình thông minh bám sát sở thích & ngân sách của bạn.
           </p>
 
-          {/* Thanh tìm kiếm nhanh không dấu */}
-          <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-4">
+          {/* Thanh tìm kiếm nhanh */}
+          <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-4 relative">
             <div className="flex items-center bg-white rounded-2xl shadow-xl p-2 border border-slate-200 text-slate-800">
               <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0" />
               <input
                 type="text"
-                placeholder="Tìm kiếm địa điểm không dấu (ví dụ: Bà Nà, Cầu Rồng, Hội An)..."
+                aria-label="Tìm kiếm địa điểm du lịch"
+                placeholder="Tìm kiếm địa điểm..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowSuggestions(true);
+                }}
                 className="w-full px-3 py-2 text-sm focus:outline-none placeholder-slate-400"
               />
               <button
@@ -99,6 +137,20 @@ export default function HomePage() {
                 Tìm kiếm
               </button>
             </div>
+            <SearchSuggestions
+              items={searchSuggestions}
+              visible={showSuggestions}
+              onSelect={(item) => {
+                setShowSuggestions(false);
+                if (item.type === 'destination') {
+                  navigate(`/destinations/${item.id}`);
+                } else if (item.type === 'category') {
+                  navigate(`/destinations?danh_muc_ids=${item.id}`);
+                } else {
+                  navigate(`/destinations?tinh_thanh_id=${item.id}`);
+                }
+              }}
+            />
           </form>
 
           {/* CTA Buttons */}
@@ -144,9 +196,9 @@ export default function HomePage() {
             <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600">
               <Compass className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">Bản đồ OSRM tối ưu quãng đường</h3>
+            <h3 className="text-lg font-bold text-slate-800">Tối ưu lộ trình di chuyển</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Tự động tìm kiếm thứ tự tham quan ngắn nhất (thuật toán TSP), hỗ trợ kéo thả đổi chặng linh hoạt và ước tính chính xác số km/phút di chuyển.
+              Tự động sắp xếp thứ tự tham quan hợp lý, hỗ trợ kéo thả đổi chặng linh hoạt và ước tính chính xác quãng đường, thời gian di chuyển.
             </p>
           </div>
 
@@ -156,7 +208,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-lg font-bold text-slate-800">Dự báo thời tiết 5 ngày</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Tích hợp dữ liệu khí tượng OpenWeatherMap cập nhật nhiệt độ, độ ẩm và tình trạng mưa/nắng để bạn chủ động chuẩn bị trang phục phù hợp.
+              Cập nhật nhiệt độ, độ ẩm và tình trạng mưa/nắng theo từng khung giờ để bạn chủ động chuẩn bị trang phục phù hợp.
             </p>
           </div>
         </div>
@@ -182,8 +234,8 @@ export default function HomePage() {
           <DestinationSkeleton count={4} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredDestinations.map((item) => (
-              <DestinationCard key={item.id} destination={item} />
+            {featuredDestinations.map((item, idx) => (
+              <DestinationCard key={item.id} destination={item} priority={idx < 2} />
             ))}
           </div>
         )}

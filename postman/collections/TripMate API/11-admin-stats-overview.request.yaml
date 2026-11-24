@@ -1,0 +1,23 @@
+$kind: http-request
+name: 11 - Admin Stats Overview
+order: 11000
+method: GET
+url: '{{baseUrl}}/api/admin/stats'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Admin stats returns 200', function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test('Overview and 3 charts present', function () {
+        const json = pm.response.json();
+        pm.expect(json.success).to.eql(true);
+        pm.expect(json.data).to.have.property('overview');
+        pm.expect(json.data.charts.tang_truong_nguoi_dung).to.be.an('array');
+        pm.expect(json.data.charts.lich_trinh_theo_tinh_thanh).to.be.an('array');
+        pm.expect(json.data.charts.phan_bo_danh_gia).to.have.lengthOf(5);
+      });

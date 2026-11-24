@@ -16,7 +16,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^3.6.1",
     "@prisma/client": "5.22.0",
     "@supabase/supabase-js": "^2.119.2",
     "axios": "^1.21.1",

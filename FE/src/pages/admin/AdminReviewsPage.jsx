@@ -88,7 +88,7 @@ export default function AdminReviewsPage() {
       if (res.success) {
         setReviews((prev) => prev.filter((r) => r.id !== deletingReview.id));
         setDeletingReview(null);
-        showToast('Đã xóa đánh giá, tính lại điểm TB địa điểm & gửi thông báo UTC+7.');
+        showToast('Đã xóa đánh giá và cập nhật lại điểm trung bình.');
       } else {
         throw new Error(res.message || 'Xóa đánh giá thất bại');
       }
@@ -113,11 +113,11 @@ export default function AdminReviewsPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">
             <MessageSquare className="w-4 h-4" />
-            <span>Kiểm duyệt cộng đồng • PB17 (UI_37–39)</span>
+            <span>Kiểm duyệt cộng đồng</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Quản lý đánh giá địa điểm</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Lọc theo số sao, xóa đánh giá vi phạm kèm lý do bắt buộc & tự động cập nhật điểm TB.
+            Xem, lọc theo số sao và xử lý các đánh giá vi phạm.
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export default function AdminReviewsPage() {
                   <th className="py-3.5 px-4">Người đánh giá</th>
                   <th className="py-3.5 px-4">Số sao</th>
                   <th className="py-3.5 px-4">Nội dung nhận xét</th>
-                  <th className="py-3.5 px-4">Thời gian (UTC+7)</th>
+                  <th className="py-3.5 px-4">Thời gian</th>
                   <th className="py-3.5 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -224,7 +224,7 @@ export default function AdminReviewsPage() {
                           type="button"
                           onClick={() => setViewingReview(r)}
                           className="p-2 rounded-lg text-slate-600 hover:text-teal-700 hover:bg-teal-50 transition"
-                          title="Xem chi tiết đánh giá (UI_38)"
+                          title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -236,7 +236,7 @@ export default function AdminReviewsPage() {
                             setDeleteError('');
                           }}
                           className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-                          title="Xóa đánh giá kèm lý do (UI_39)"
+                          title="Xóa đánh giá"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -359,7 +359,7 @@ export default function AdminReviewsPage() {
                   required
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
-                  placeholder="Nhập lý do xóa để gửi thông báo UTC+7 cho người đánh giá..."
+                  placeholder="Nhập lý do xóa đánh giá..."
                   className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
                 />
               </div>

@@ -679,7 +679,7 @@ export default function DestinationDetailPage() {
                   required
                   value={reviewContent}
                   onChange={(e) => setReviewContent(e.target.value)}
-                  placeholder="Chia sẻ cảm nhận về cảnh quan, dịch vụ, thời điểm thích hợp để ghé thăm..."
+                  placeholder="Viết đánh giá của bạn..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>

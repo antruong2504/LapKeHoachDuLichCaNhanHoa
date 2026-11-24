@@ -191,11 +191,11 @@ export default function AdminCategoriesPage() {
         <div>
           <div className="flex items-center gap-2 text-teal-700 font-semibold text-xs uppercase tracking-wider mb-1">
             <FolderTree className="w-4 h-4" />
-            <span>PB15 • Cây Danh Mục Địa Điểm 2 Cấp</span>
+            <span>Danh mục địa điểm</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Quản lý Danh mục</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Phân loại địa điểm du lịch theo cấu trúc 2 cấp (Mỗi nhóm có tối đa 10 mục con, chống trùng tên không dấu)
+            Quản lý nhóm danh mục và các danh mục con của địa điểm du lịch.
           </p>
         </div>
 
@@ -413,12 +413,9 @@ export default function AdminCategoriesPage() {
                   required
                   value={groupForm.ten_nhom}
                   onChange={(e) => setGroupForm({ ...groupForm, ten_nhom: e.target.value })}
-                  placeholder="Ví dụ: Du lịch Văn hóa & Di sản"
+                  placeholder="Nhập tên nhóm danh mục"
                   className="w-full px-4 py-2.5 bg-slate-50 hover:bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
-                <p className="mt-1 text-[11px] text-slate-400">
-                  Hệ thống tự động kiểm tra chống trùng tên không dấu
-                </p>
               </div>
 
               <div>
@@ -429,7 +426,7 @@ export default function AdminCategoriesPage() {
                   rows={3}
                   value={groupForm.mo_ta}
                   onChange={(e) => setGroupForm({ ...groupForm, mo_ta: e.target.value })}
-                  placeholder="Mô tả ý nghĩa và đối tượng của nhóm danh mục này..."
+                  placeholder="Nhập mô tả..."
                   className="w-full px-4 py-2.5 bg-slate-50 hover:bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>
@@ -510,7 +507,7 @@ export default function AdminCategoriesPage() {
                   onChange={(e) =>
                     setCategoryForm({ ...categoryForm, ten_danh_muc: e.target.value })
                   }
-                  placeholder="Ví dụ: Chùa chiền, Đền thờ, Bảo tàng"
+                  placeholder="Nhập tên danh mục"
                   className="w-full px-4 py-2.5 bg-slate-50 hover:bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>
@@ -525,7 +522,7 @@ export default function AdminCategoriesPage() {
                   onChange={(e) =>
                     setCategoryForm({ ...categoryForm, mo_ta: e.target.value })
                   }
-                  placeholder="Mô tả tiêu chuẩn của danh mục này..."
+                  placeholder="Nhập mô tả..."
                   className="w-full px-4 py-2.5 bg-slate-50 hover:bg-white hover:border-slate-300 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>

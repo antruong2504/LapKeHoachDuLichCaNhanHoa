@@ -10,6 +10,7 @@ import {
   deleteGuide,
 } from '../controllers/guideController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
+import { cacheResponse, invalidateOnMutation } from '../utils/memoryCache.js';
 
 const router = express.Router();
 
@@ -26,15 +27,17 @@ const upload = multer({
   },
 });
 
-// Public: Xem danh sách & chi tiết cẩm nang
-router.get('/', getGuides);
-router.get('/:id', getGuideById);
+const clearGuideCache = invalidateOnMutation(['guides:']);
+
+// Public: Xem danh sách & chi tiết cẩm nang (cache 2 phút)
+router.get('/', cacheResponse('guides:', 120_000), getGuides);
+router.get('/:id', cacheResponse('guides:', 120_000), getGuideById);
 
 // Private (Khách hàng / Admin): Upload ảnh, đăng cẩm nang, bình luận, chia sẻ, xóa
 router.post('/upload', authenticate, upload.single('image'), uploadGuideImage);
-router.post('/', authenticate, createGuide);
-router.post('/:id/comments', authenticate, addGuideComment);
-router.post('/:id/share', authenticate, shareGuide);
-router.delete('/:id', authenticate, deleteGuide);
+router.post('/', authenticate, clearGuideCache, createGuide);
+router.post('/:id/comments', authenticate, clearGuideCache, addGuideComment);
+router.post('/:id/share', authenticate, clearGuideCache, shareGuide);
+router.delete('/:id', authenticate, clearGuideCache, deleteGuide);
 
 export default router;

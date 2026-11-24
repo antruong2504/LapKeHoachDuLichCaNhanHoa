@@ -4,7 +4,7 @@ import { MapPin, Star, Heart, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import favoriteService from '../services/favoriteService';
 
-export default function DestinationCard({ destination, onToggleFavorite, isFavorite = false }) {
+export default function DestinationCard({ destination, onToggleFavorite, isFavorite = false, priority = false }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [favActive, setFavActive] = useState(isFavorite);
@@ -43,18 +43,28 @@ export default function DestinationCard({ destination, onToggleFavorite, isFavor
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => navigate(`/destinations/${destination.id}`)}
-      className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 transition-all duration-300 flex flex-col cursor-pointer"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/destinations/${destination.id}`);
+        }
+      }}
+      className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-teal-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all duration-300 flex flex-col cursor-pointer"
     >
       {/* Thumbnail Container */}
       <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-100">
         <img
           src={destination.anh_dai_dien || defaultImg}
           alt={destination.ten_dia_diem}
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
-            e.target.src = defaultImg;
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = defaultImg;
           }}
         />
 

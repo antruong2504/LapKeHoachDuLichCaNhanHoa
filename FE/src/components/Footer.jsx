@@ -98,9 +98,9 @@ const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-slate-800 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p>© 2026 TripMate. Bản quyền thuộc về Nhóm 1 - ĐH Duy Tân.</p>
+          <p>© 2026 TripMate. Nền tảng lập kế hoạch du lịch thông minh.</p>
           <p className="flex items-center gap-1">
-            Phát triển với <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> bằng React Vite & Supabase
+            Đồng hành cùng bạn trên mọi hành trình <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
           </p>
         </div>
       </div>

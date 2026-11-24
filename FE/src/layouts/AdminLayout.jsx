@@ -35,13 +35,12 @@ const AdminLayout = () => {
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-40">
           <div>
             <h1 className="text-base font-bold text-slate-800">Hệ Thống Quản Trị TripMate</h1>
-            <p className="text-xs text-slate-400">Thời gian hệ thống: UTC+7 (Asia/Ho_Chi_Minh)</p>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-              <span>Supabase Cloud Connected</span>
+              <span>Hệ thống trực tuyến</span>
             </div>
 
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200">

@@ -260,13 +260,13 @@ export default function TripPlannerPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 mb-2">
               <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>AI Travel Assistant • PB08</span>
+              <span>Trợ lý Lịch trình AI</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              Lập kế hoạch bằng <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">Gemini AI</span>
+              Lập kế hoạch bằng <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">AI</span>
             </h1>
             <p className="mt-2 text-slate-600 max-w-2xl text-sm sm:text-base">
-              Nhập 6 thông tin chuyến đi — Trí tuệ nhân tạo sẽ tự động tổng hợp các địa điểm nổi tiếng, tối ưu ngân sách và thiết kế lộ trình từng ngày dành riêng cho bạn.
+              Nhập thông tin chuyến đi để nhận gợi ý lịch trình từng ngày, tối ưu ngân sách và phù hợp với sở thích của bạn.
             </p>
           </div>
 
@@ -275,7 +275,7 @@ export default function TripPlannerPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs sm:text-sm font-bold shadow-sm transition self-start md:self-auto"
           >
             <Compass className="w-4 h-4 text-teal-600" />
-            <span>Tự tạo thủ công (UI_19)</span>
+            <span>Tự tạo thủ công</span>
           </Link>
         </div>
 
@@ -360,12 +360,19 @@ export default function TripPlannerPage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      step="500000"
-                      min="100000"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={formData.ngan_sach_du_kien}
-                      onChange={(e) => setFormData({ ...formData, ngan_sach_du_kien: e.target.value })}
+                      placeholder="Nhập ngân sách dự kiến"
+                      value={
+                        formData.ngan_sach_du_kien !== '' && formData.ngan_sach_du_kien !== null
+                          ? Number(formData.ngan_sach_du_kien).toLocaleString('vi-VN')
+                          : ''
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '');
+                        setFormData({ ...formData, ngan_sach_du_kien: raw ? Number(raw) : '' });
+                      }}
                       className="w-full pl-4 pr-16 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
@@ -456,7 +463,7 @@ export default function TripPlannerPage() {
                   rows="2"
                   value={formData.ghi_chu_so_thich}
                   onChange={(e) => setFormData({ ...formData, ghi_chu_so_thich: e.target.value })}
-                  placeholder="Ghi chú thêm sở thích riêng (ví dụ: muốn đi quán cafe yên tĩnh ngắm biển, thích đồ nướng đêm, có em bé nhỏ...)"
+                  placeholder="Ví dụ: thích quán cà phê yên tĩnh, đồ ăn địa phương, đi cùng trẻ nhỏ..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>

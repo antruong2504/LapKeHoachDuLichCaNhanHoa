@@ -257,7 +257,7 @@ export default function GuidesPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1.5">
               <BookOpen className="w-4 h-4" />
-              <span>Cộng đồng du lịch • PB11 (UI_23)</span>
+              <span>Cộng đồng du lịch</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Cẩm nang <span className="text-teal-600">du lịch</span>
@@ -288,7 +288,7 @@ export default function GuidesPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm cẩm nang theo địa điểm, kinh nghiệm, ẩm thực..."
+              placeholder="Tìm kiếm cẩm nang..."
               className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-500"
             />
           </div>
@@ -336,8 +336,16 @@ export default function GuidesPage() {
             {guides.map((guide) => (
               <article
                 key={guide.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleOpenDetail(guide.id)}
-                className="bg-white rounded-3xl border border-slate-200 hover:border-teal-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer group"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenDetail(guide.id);
+                  }
+                }}
+                className="bg-white rounded-3xl border border-slate-200 hover:border-teal-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer group"
               >
                 <div className="relative h-48 bg-slate-200 overflow-hidden">
                   <img
@@ -346,6 +354,11 @@ export default function GuidesPage() {
                       'https://images.unsplash.com/photo-1528127269322-539801943592?w=800'
                     }
                     alt={guide.tieu_de}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
@@ -435,7 +448,7 @@ export default function GuidesPage() {
                     required
                     value={createForm.tieu_de}
                     onChange={(e) => setCreateForm({ ...createForm, tieu_de: e.target.value })}
-                    placeholder="VD: Kinh nghiệm du lịch Đà Nẵng - Hội An 4 ngày 3 đêm tự túc"
+                    placeholder="Nhập tiêu đề cẩm nang"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 font-semibold focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                 </div>
@@ -448,7 +461,7 @@ export default function GuidesPage() {
                     type="text"
                     value={createForm.mo_ta_ngan}
                     onChange={(e) => setCreateForm({ ...createForm, mo_ta_ngan: e.target.value })}
-                    placeholder="Tóm tắt ngắn gọn điểm nổi bật của bài chia sẻ..."
+                    placeholder="Nhập mô tả ngắn..."
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                 </div>
@@ -479,7 +492,7 @@ export default function GuidesPage() {
                       type="text"
                       value={createForm.anh_dai_dien}
                       onChange={(e) => setCreateForm({ ...createForm, anh_dai_dien: e.target.value })}
-                      placeholder="Hoặc dán URL ảnh bìa (tùy chọn)..."
+                      placeholder="Dán đường dẫn ảnh bìa..."
                       className="flex-1 min-w-[200px] px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-500"
                     />
                   </div>
@@ -513,7 +526,7 @@ export default function GuidesPage() {
                     required
                     value={createForm.noi_dung}
                     onChange={(e) => setCreateForm({ ...createForm, noi_dung: e.target.value })}
-                    placeholder="Viết chi tiết lịch trình, phương tiện di chuyển, quán ăn ngon và những lưu ý quan trọng..."
+                    placeholder="Nhập nội dung cẩm nang..."
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                 </div>

@@ -236,7 +236,7 @@ export default function ChatPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600">
               <MessageSquare className="w-4 h-4" />
-              <span>Trò chuyện nhóm Realtime • PB12 (UI_24)</span>
+              <span>Trò chuyện nhóm</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
               Phòng chat <span className="text-teal-600">nhóm du lịch</span>
@@ -434,7 +434,7 @@ export default function ChatPage() {
                     type="text"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    placeholder="Nhập tin nhắn trao đổi với nhóm..."
+                    placeholder="Nhập tin nhắn..."
                     className="flex-1 px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                   <button
@@ -478,7 +478,7 @@ export default function ChatPage() {
                     required
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
-                    placeholder="VD: Team phượt Đà Nẵng cuối tuần"
+                    placeholder="Nhập tên nhóm chat"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                 </div>
@@ -542,7 +542,7 @@ export default function ChatPage() {
                     type="text"
                     value={memberIdentifier}
                     onChange={(e) => setMemberIdentifier(e.target.value)}
-                    placeholder="Nhập tên đăng nhập hoặc email..."
+                    placeholder="Tên đăng nhập hoặc email"
                     className="flex-1 px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-500"
                   />
                   <button

@@ -1,0 +1,3 @@
+$kind: collection
+name: TripMate API
+description: Kiểm thử hồi quy toàn diện các API chính của TripMate (Auth, Địa điểm, Danh mục, Cẩm nang, Thời tiết, Lịch trình, Thông báo, Admin RBAC & Thống kê).

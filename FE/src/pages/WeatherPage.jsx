@@ -15,22 +15,48 @@ import {
   MapPin,
   Calendar,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Search
 } from 'lucide-react';
 import weatherService from '../services/weatherService';
+import SearchSuggestions from '../components/SearchSuggestions';
+import { normalizeVietnamese, VIETNAM_WEATHER_LOCATIONS } from '../utils/vietnamese';
 
 export default function WeatherPage() {
   const [selectedCity, setSelectedCity] = useState('Đà Nẵng');
+  const [cityInput, setCityInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Danh sách các điểm đến du lịch phổ biến của Việt Nam
   const popularProvinces = [
-    { name: 'Đà Nẵng', tag: 'Miền Trung' },
-    { name: 'Quảng Nam', tag: 'Hội An' },
-    { name: 'Thừa Thiên Huế', tag: 'Cố đô' },
+    { name: 'Hà Nội' },
+    { name: 'Sa Pa' },
+    { name: 'Đà Nẵng' },
+    { name: 'Quảng Nam' },
+    { name: 'Thừa Thiên Huế' },
+    { name: 'Khánh Hòa' },
+    { name: 'Lâm Đồng' },
+    { name: 'Hồ Chí Minh' },
+    { name: 'Phú Quốc' },
   ];
+
+  const handleCitySearch = (e) => {
+    e.preventDefault();
+    const trimmed = cityInput.trim();
+    if (trimmed) {
+      setSelectedCity(trimmed);
+      setShowSuggestions(false);
+    }
+  };
+
+  const citySuggestions = cityInput.trim()
+    ? VIETNAM_WEATHER_LOCATIONS.filter((name) =>
+        normalizeVietnamese(name).includes(normalizeVietnamese(cityInput))
+      ).slice(0, 6)
+    : [];
 
   const fetchWeather = useCallback(async (city) => {
     setLoading(true);
@@ -96,7 +122,7 @@ export default function WeatherPage() {
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/30 border border-teal-400/40 text-teal-200 text-xs font-semibold">
             <CloudSun className="w-4 h-4 text-amber-300" />
-            <span>OpenWeatherMap Live Radar & Dự báo 5 ngày (PB07)</span>
+            <span>Dự báo thời tiết du lịch 5 ngày</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
@@ -106,8 +132,43 @@ export default function WeatherPage() {
             Chủ động theo dõi nhiệt độ, độ ẩm, sức gió và khả năng mưa tại các địa danh nổi tiếng trước khi khởi hành chuyến đi.
           </p>
 
+          {/* Thanh tìm kiếm tỉnh thành / khu vực bất kỳ */}
+          <form onSubmit={handleCitySearch} className="pt-2 max-w-xl flex gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                aria-label="Tìm kiếm thời tiết theo tỉnh thành hoặc địa danh"
+                placeholder="Nhập tên tỉnh thành hoặc địa danh..."
+                value={cityInput}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onChange={(e) => {
+                  setCityInput(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-white/20 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
+              />
+              <SearchSuggestions
+                items={citySuggestions}
+                visible={showSuggestions}
+                onSelect={(cityName) => {
+                  setSelectedCity(cityName);
+                  setCityInput(cityName);
+                  setShowSuggestions(false);
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-sm shrink-0 cursor-pointer"
+            >
+              Xem thời tiết
+            </button>
+          </form>
+
           {/* Thanh chọn nhanh tỉnh thành du lịch */}
-          <div className="pt-2 flex flex-wrap gap-2 items-center">
+          <div className="pt-1 flex flex-wrap gap-2 items-center">
             <span className="text-xs font-semibold text-teal-200">Điểm đến phổ biến:</span>
             {popularProvinces.map((p) => {
               const active = selectedCity === p.name;
@@ -115,7 +176,10 @@ export default function WeatherPage() {
                 <button
                   key={p.name}
                   type="button"
-                  onClick={() => setSelectedCity(p.name)}
+                  onClick={() => {
+                    setSelectedCity(p.name);
+                    setCityInput('');
+                  }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                     active
                       ? 'bg-amber-500 text-white shadow-xs'
@@ -293,8 +357,18 @@ export default function WeatherPage() {
                     </div>
 
                     <div className="my-1">
-                      <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
-                        <Sun className="w-7 h-7" />
+                      <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-50 flex items-center justify-center">
+                        {day.icon?.startsWith('09') || day.icon?.startsWith('10') ? (
+                          <CloudRain className="w-7 h-7 text-blue-500" />
+                        ) : day.icon?.startsWith('11') ? (
+                          <CloudRain className="w-7 h-7 text-indigo-600" />
+                        ) : day.icon?.startsWith('03') || day.icon?.startsWith('04') || day.icon?.startsWith('50') ? (
+                          <Cloud className="w-7 h-7 text-slate-500" />
+                        ) : day.icon?.startsWith('02') ? (
+                          <CloudSun className="w-7 h-7 text-amber-500" />
+                        ) : (
+                          <Sun className="w-7 h-7 text-amber-500" />
+                        )}
                       </div>
                       <p className="text-2xl font-black text-slate-900 mt-1">
                         {day.nhiet_do}°<span className="text-xs font-normal text-slate-500">C</span>

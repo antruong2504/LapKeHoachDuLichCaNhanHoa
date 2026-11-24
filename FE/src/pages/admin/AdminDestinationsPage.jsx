@@ -265,11 +265,11 @@ export default function AdminDestinationsPage() {
         <div>
           <div className="flex items-center gap-2 text-teal-600 font-semibold text-sm">
             <MapPin className="w-4 h-4" />
-            <span>Quản trị Hệ thống (PB19 - UI_27)</span>
+            <span>Quản trị địa điểm</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Quản lý Địa điểm Du lịch</h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            Phân trang 10 mục/trang, cờ nổi bật, xóa mềm và kiểm soát xung đột ghi đè Optimistic Locking.
+            Thêm mới, chỉnh sửa và quản lý danh sách địa điểm du lịch.
           </p>
         </div>
         <button
@@ -307,7 +307,7 @@ export default function AdminDestinationsPage() {
               placeholder="Tìm theo tên địa điểm, địa chỉ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
             />
           </div>
 
@@ -521,7 +521,7 @@ export default function AdminDestinationsPage() {
                             <>
                               <button
                                 onClick={() => handleOpenEdit(dest)}
-                                title="Chỉnh sửa địa điểm (UI_28)"
+                                title="Chỉnh sửa địa điểm"
                                 className="p-1.5 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
                               >
                                 <Edit className="w-4 h-4" />
@@ -589,7 +589,7 @@ export default function AdminDestinationsPage() {
                   <h3 className="text-lg font-bold text-slate-900">
                     {isEditing ? 'Chỉnh sửa Địa điểm Du lịch' : 'Thêm Địa điểm Du lịch mới'}
                   </h3>
-                  <p className="text-xs text-slate-500">Màn hình biểu mẫu chuẩn UI_28</p>
+                  <p className="text-xs text-slate-500">Thông tin địa điểm du lịch</p>
                 </div>
               </div>
               <button
@@ -605,7 +605,7 @@ export default function AdminDestinationsPage() {
               <div className="m-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-800">
-                  <p className="font-bold">Cảnh báo Xung đột Phiên bản (Optimistic Locking):</p>
+                  <p className="font-bold">Dữ liệu vừa được cập nhật bởi phiên khác:</p>
                   <p className="mt-1">{conflictError}</p>
                   <button
                     type="button"
@@ -630,7 +630,7 @@ export default function AdminDestinationsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Bà Nà Hills, Phố cổ Hội An..."
+                  placeholder="Nhập tên địa điểm"
                   value={formData.ten_dia_diem}
                   onChange={(e) => setFormData({ ...formData, ten_dia_diem: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -666,7 +666,7 @@ export default function AdminDestinationsPage() {
                     type="number"
                     min="0"
                     step="1000"
-                    placeholder="0 = Miễn phí"
+                    placeholder="Nhập giá vé"
                     value={formData.gia_tham_quan}
                     onChange={(e) => setFormData({ ...formData, gia_tham_quan: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -681,7 +681,7 @@ export default function AdminDestinationsPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Hòa Ninh, Hòa Vang, Đà Nẵng"
+                  placeholder="Nhập địa chỉ chi tiết"
                   value={formData.dia_chi}
                   onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -696,7 +696,7 @@ export default function AdminDestinationsPage() {
                   <input
                     type="number"
                     step="any"
-                    placeholder="Ví dụ: 15.998242"
+                    placeholder="Nhập vĩ độ"
                     value={formData.vi_do}
                     onChange={(e) => setFormData({ ...formData, vi_do: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -709,7 +709,7 @@ export default function AdminDestinationsPage() {
                   <input
                     type="number"
                     step="any"
-                    placeholder="Ví dụ: 107.996112"
+                    placeholder="Nhập kinh độ"
                     value={formData.kinh_do}
                     onChange={(e) => setFormData({ ...formData, kinh_do: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -770,7 +770,7 @@ export default function AdminDestinationsPage() {
                 <div className="flex gap-2">
                   <input
                     type="url"
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="Dán đường dẫn ảnh hoặc tải lên"
                     value={formData.anh_dai_dien}
                     onChange={(e) => setFormData({ ...formData, anh_dai_dien: e.target.value })}
                     className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -790,7 +790,7 @@ export default function AdminDestinationsPage() {
                 </label>
                 <textarea
                   rows="2"
-                  placeholder="Tóm tắt điểm đặc sắc nhất của địa điểm..."
+                  placeholder="Nhập mô tả ngắn..."
                   value={formData.mo_ta_ngan}
                   onChange={(e) => setFormData({ ...formData, mo_ta_ngan: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -804,7 +804,7 @@ export default function AdminDestinationsPage() {
                 </label>
                 <textarea
                   rows="4"
-                  placeholder="Lịch sử, kinh nghiệm tham quan, các hoạt động hấp dẫn..."
+                  placeholder="Nhập mô tả chi tiết..."
                   value={formData.mo_ta_chi_tiet}
                   onChange={(e) => setFormData({ ...formData, mo_ta_chi_tiet: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"

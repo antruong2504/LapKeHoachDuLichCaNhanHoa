@@ -1,0 +1,20 @@
+$kind: http-request
+name: 08 - Trips My Trips
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/trips'
+headers:
+  - key: Authorization
+    value: 'Bearer {{customerToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Status code is 200', function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test('User trips returned as array', function () {
+        const json = pm.response.json();
+        pm.expect(json.success).to.eql(true);
+        pm.expect(json.data).to.be.an('array');
+      });

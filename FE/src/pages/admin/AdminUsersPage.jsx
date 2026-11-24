@@ -123,11 +123,11 @@ export default function AdminUsersPage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">
             <Users className="w-4 h-4" />
-            <span>Quản trị hệ thống • PB16 (UI_31–33)</span>
+            <span>Quản trị hệ thống</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900">Quản lý tài khoản người dùng</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Theo dõi tài khoản thành viên, khóa hoặc mở khóa kèm lý do và thông báo UTC+7.
+            Theo dõi và quản lý trạng thái tài khoản thành viên.
           </p>
         </div>
 
@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
                   <th className="py-3.5 px-4">Liên hệ</th>
                   <th className="py-3.5 px-4">Vai trò</th>
                   <th className="py-3.5 px-4">Trạng thái</th>
-                  <th className="py-3.5 px-4">Thời gian khóa (UTC+7)</th>
+                  <th className="py-3.5 px-4">Thời gian khóa</th>
                   <th className="py-3.5 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -395,7 +395,7 @@ export default function AdminUsersPage() {
                   onChange={(e) => setModalReason(e.target.value)}
                   placeholder={
                     targetUser.trang_thai === 'hoat_dong'
-                      ? 'Nhập lý do khóa tài khoản để lưu lịch sử và gửi thông báo UTC+7...'
+                      ? 'Nhập lý do khóa tài khoản...'
                       : 'Nhập ghi chú xác nhận mở khóa (nếu có)...'
                   }
                   className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-teal-500"

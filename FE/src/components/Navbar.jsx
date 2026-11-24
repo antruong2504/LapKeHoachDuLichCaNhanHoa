@@ -234,7 +234,23 @@ const Navbar = () => {
 
           {/* Nút Mobile Menu */}
           <div className="md:hidden flex items-center gap-2">
+            {user && (
+              <Link
+                to="/notifications"
+                aria-label="Thông báo"
+                className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
+              type="button"
+              aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 hover:bg-slate-100"
             >
@@ -259,20 +275,58 @@ const Navbar = () => {
           ))}
           <div className="border-t border-slate-100 pt-3">
             {user ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50"
+                  >
+                    Khu vực Quản trị Admin
+                  </Link>
+                )}
                 <Link
                   to="/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700"
+                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Hồ sơ ({user.ho_ten})
                 </Link>
+                <Link
+                  to="/my-trips"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Lịch trình của tôi
+                </Link>
+                <Link
+                  to="/trips/manual-create"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Tự tạo lịch trình
+                </Link>
+                <Link
+                  to="/favorites"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Địa điểm yêu thích
+                </Link>
+                <Link
+                  to="/chat"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Nhóm chat du lịch
+                </Link>
                 <button
+                  type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="block w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-red-600"
+                  className="block w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50"
                 >
                   Đăng xuất
                 </button>

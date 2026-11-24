@@ -129,13 +129,13 @@ export default function NotificationsPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1.5">
               <Bell className="w-4 h-4" />
-              <span>Thông báo hệ thống UTC+7 • PB13 (UI_25)</span>
+              <span>Thông báo của bạn</span>
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
               Thông báo <span className="text-teal-600">của tôi</span>
             </h1>
             <p className="mt-1 text-slate-600 text-sm">
-              Cập nhật tức thì về lịch trình, cẩm nang và tài khoản (múi giờ Việt Nam UTC+7).
+              Cập nhật mới nhất về lịch trình, cẩm nang và tài khoản của bạn.
             </p>
           </div>
 
@@ -230,8 +230,7 @@ export default function NotificationsPage() {
                       {noti.thoi_gian_vn ||
                         new Date(noti.created_at).toLocaleString('vi-VN', {
                           timeZone: 'Asia/Ho_Chi_Minh',
-                        })}{' '}
-                      (UTC+7)
+                        })}
                     </span>
                   </p>
                 </div>

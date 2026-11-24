@@ -108,7 +108,7 @@ export default function MyTripsPage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1.5">
               <Calendar className="w-4 h-4" />
-              <span>Quản lý lịch trình • PB09 (UI_20)</span>
+              <span>Lịch trình cá nhân</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Chuyến đi của <span className="text-teal-600">tôi</span>

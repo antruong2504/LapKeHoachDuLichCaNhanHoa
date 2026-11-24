@@ -325,10 +325,18 @@ export default function TripDetailPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Ngân sách dự kiến (VNĐ)</label>
                 <input
-                  type="number"
-                  step="500000"
-                  value={editForm.ngan_sach_du_kien}
-                  onChange={(e) => setEditForm({ ...editForm, ngan_sach_du_kien: Number(e.target.value) || 0 })}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Nhập ngân sách"
+                  value={
+                    editForm.ngan_sach_du_kien !== '' && editForm.ngan_sach_du_kien !== null
+                      ? Number(editForm.ngan_sach_du_kien).toLocaleString('vi-VN')
+                      : ''
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    setEditForm({ ...editForm, ngan_sach_du_kien: raw ? Number(raw) : 0 });
+                  }}
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold focus:outline-none focus:border-teal-500"
                 />
               </div>
@@ -351,7 +359,7 @@ export default function TripDetailPage() {
                   type="text"
                   value={editForm.so_thich}
                   onChange={(e) => setEditForm({ ...editForm, so_thich: e.target.value })}
-                  placeholder="VD: Nghỉ dưỡng, tắm biển..."
+                  placeholder="Nhập sở thích hoặc ghi chú"
                   className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-teal-500"
                 />
               </div>

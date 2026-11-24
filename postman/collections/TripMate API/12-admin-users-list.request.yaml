@@ -1,0 +1,26 @@
+$kind: http-request
+name: 12 - Admin Users List
+order: 12000
+method: GET
+url: '{{baseUrl}}/api/admin/users?page=1&limit=10'
+queryParams:
+  - key: page
+    value: '1'
+  - key: limit
+    value: '10'
+headers:
+  - key: Authorization
+    value: 'Bearer {{adminToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |
+      pm.test('Admin users returns 200', function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test('Users paginated at max 10 rows', function () {
+        const json = pm.response.json();
+        pm.expect(json.success).to.eql(true);
+        pm.expect(json.data).to.be.an('array');
+        pm.expect(json.data.length).to.be.at.most(10);
+      });

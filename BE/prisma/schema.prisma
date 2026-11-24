@@ -45,6 +45,8 @@ model tai_khoans {
   thanh_vien_nhoms    thanh_vien_nhoms[]
   tin_nhans           tin_nhans[]
   thong_baos          thong_baos[]
+
+  @@index([created_at], map: "idx_tai_khoans_created_at")
 }
 
 // -------------------------------------------------------
@@ -85,6 +87,8 @@ model danh_mucs {
   // Quan hệ
   nhom_danh_muc    nhom_danh_mucs       @relation(fields: [nhom_danh_muc_id], references: [id], onDelete: Cascade)
   dia_diem_danh_mucs dia_diem_danh_mucs[]
+
+  @@index([nhom_danh_muc_id], map: "idx_danh_mucs_nhom_danh_muc_id")
 }
 
 // -------------------------------------------------------
@@ -115,6 +119,10 @@ model dia_diems {
   yeu_thichs          dia_diem_yeu_thichs[]
   lich_trinh_chi_tiets lich_trinh_chi_tiets[]
   danh_gias           danh_gias[]
+
+  @@index([tinh_thanh_id], map: "idx_dia_diems_tinh_thanh_id")
+  @@index([trang_thai, tinh_thanh_id, noi_bat, created_at(sort: Desc)], map: "idx_dia_diems_filter_sort")
+  @@index([trang_thai, diem_danh_gia_tb(sort: Desc)], map: "idx_dia_diems_rating_sort")
 }
 
 // -------------------------------------------------------
@@ -128,6 +136,7 @@ model dia_diem_danh_mucs {
   danh_muc danh_mucs @relation(fields: [danh_muc_id], references: [id], onDelete: Cascade)
 
   @@id([dia_diem_id, danh_muc_id])
+  @@index([danh_muc_id], map: "idx_dia_diem_danh_mucs_danh_muc_id")
 }
 
 // -------------------------------------------------------
@@ -140,6 +149,8 @@ model dia_diem_hinh_anhs {
   thu_tu      Int      @default(0)
 
   dia_diem dia_diems @relation(fields: [dia_diem_id], references: [id], onDelete: Cascade)
+
+  @@index([dia_diem_id, thu_tu], map: "idx_dia_diem_hinh_anhs_dia_diem_thu_tu")
 }
 
 // -------------------------------------------------------
@@ -155,6 +166,7 @@ model dia_diem_yeu_thichs {
   dia_diem  dia_diems  @relation(fields: [dia_diem_id], references: [id], onDelete: Cascade)
 
   @@unique([tai_khoan_id, dia_diem_id])
+  @@index([dia_diem_id], map: "idx_dia_diem_yeu_thichs_dia_diem_id")
 }
 
 // -------------------------------------------------------
@@ -181,6 +193,10 @@ model lich_trinhs {
   tinh_thanh   tinh_thanh_phos  @relation(fields: [tinh_thanh_id], references: [id], onDelete: Restrict)
   ngays        lich_trinh_ngays[]
   ban_nhap_ais ban_nhap_ais[]
+
+  @@index([tai_khoan_id, created_at(sort: Desc)], map: "idx_lich_trinhs_tai_khoan_created")
+  @@index([tinh_thanh_id], map: "idx_lich_trinhs_tinh_thanh_id")
+  @@index([created_at], map: "idx_lich_trinhs_created_at")
 }
 
 // -------------------------------------------------------
@@ -218,6 +234,9 @@ model lich_trinh_chi_tiets {
 
   lich_trinh_ngay lich_trinh_ngays @relation(fields: [lich_trinh_ngay_id], references: [id], onDelete: Cascade)
   dia_diem        dia_diems?       @relation(fields: [dia_diem_id], references: [id], onDelete: SetNull)
+
+  @@index([lich_trinh_ngay_id, thu_tu], map: "idx_lich_trinh_chi_tiets_ngay_thu_tu")
+  @@index([dia_diem_id], map: "idx_lich_trinh_chi_tiets_dia_diem_id")
 }
 
 // -------------------------------------------------------
@@ -236,6 +255,8 @@ model ban_nhap_ais {
   tai_khoan       tai_khoans   @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
   lich_trinh_goc  lich_trinhs? @relation(fields: [lich_trinh_goc_id], references: [id], onDelete: SetNull)
 
+  @@index([tai_khoan_id], map: "idx_ban_nhap_ais_tai_khoan_id")
+  @@index([lich_trinh_goc_id], map: "idx_ban_nhap_ais_lich_trinh_goc_id")
   @@map("ban_nhap_ais")
 }
 
@@ -256,6 +277,9 @@ model cam_nangs {
   chia_se_cam_nangs     chia_se_cam_nangs[]
   binh_luan_cam_nangs   binh_luan_cam_nangs[]
   danh_gias             danh_gias[]
+
+  @@index([tac_gia_id], map: "idx_cam_nangs_tac_gia_id")
+  @@index([ngay_dang(sort: Desc)], map: "idx_cam_nangs_ngay_dang")
 }
 
 // -------------------------------------------------------
@@ -280,6 +304,7 @@ model cam_nang_anh_lien_kets {
   hinh_anh cam_nang_hinh_anhs @relation(fields: [hinh_anh_id], references: [id], onDelete: Cascade)
 
   @@id([cam_nang_id, hinh_anh_id])
+  @@index([hinh_anh_id], map: "idx_cam_nang_anh_lien_kets_hinh_anh_id")
 }
 
 // -------------------------------------------------------
@@ -293,6 +318,9 @@ model chia_se_cam_nangs {
 
   cam_nang  cam_nangs  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
   tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+
+  @@index([cam_nang_id], map: "idx_chia_se_cam_nangs_cam_nang_id")
+  @@index([tai_khoan_id], map: "idx_chia_se_cam_nangs_tai_khoan_id")
 }
 
 // -------------------------------------------------------
@@ -307,6 +335,9 @@ model binh_luan_cam_nangs {
 
   cam_nang  cam_nangs  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
   tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+
+  @@index([cam_nang_id, created_at(sort: Desc)], map: "idx_binh_luan_cam_nangs_cam_nang_created")
+  @@index([tai_khoan_id], map: "idx_binh_luan_cam_nangs_tai_khoan_id")
 }
 
 // -------------------------------------------------------
@@ -325,6 +356,11 @@ model danh_gias {
   tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
   dia_diem  dia_diems?  @relation(fields: [dia_diem_id], references: [id], onDelete: SetNull)
   cam_nang  cam_nangs?  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
+
+  @@index([dia_diem_id, created_at(sort: Desc)], map: "idx_danh_gias_dia_diem_created")
+  @@index([cam_nang_id, created_at(sort: Desc)], map: "idx_danh_gias_cam_nang_created")
+  @@index([tai_khoan_id], map: "idx_danh_gias_tai_khoan_id")
+  @@index([so_sao, created_at(sort: Desc)], map: "idx_danh_gias_so_sao_created")
 }
 
 // -------------------------------------------------------
@@ -351,6 +387,7 @@ model thanh_vien_nhoms {
   tai_khoan tai_khoans       @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
 
   @@id([nhom_id, tai_khoan_id])
+  @@index([tai_khoan_id], map: "idx_thanh_vien_nhoms_tai_khoan_id")
 }
 
 // -------------------------------------------------------
@@ -365,6 +402,9 @@ model tin_nhans {
 
   nhom      nhom_tro_chuyens @relation(fields: [nhom_id], references: [id], onDelete: Cascade)
   nguoi_gui tai_khoans       @relation(fields: [nguoi_gui_id], references: [id], onDelete: Cascade)
+
+  @@index([nhom_id, created_at], map: "idx_tin_nhans_nhom_created")
+  @@index([nguoi_gui_id], map: "idx_tin_nhans_nguoi_gui_id")
 }
 
 // -------------------------------------------------------
@@ -381,4 +421,6 @@ model thong_baos {
   read_at       DateTime?
 
   tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+
+  @@index([tai_khoan_id, da_doc, created_at(sort: Desc)], map: "idx_thong_baos_tai_khoan_doc_created")
 }

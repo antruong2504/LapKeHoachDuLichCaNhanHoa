@@ -158,7 +158,7 @@ function SortableStopCard({
                 type="text"
                 value={stop.thoi_gian_du_kien || ''}
                 onChange={(e) => onUpdateStop(index, { thoi_gian_du_kien: e.target.value })}
-                placeholder="VD: 08:00 - 11:30"
+                placeholder="Nhập khung giờ"
                 className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-teal-500"
               />
             </div>
@@ -170,7 +170,7 @@ function SortableStopCard({
               </label>
               <input
                 type="number"
-                step="50000"
+                step="any"
                 min="0"
                 value={stop.chi_phi_uoc_tinh || 0}
                 onChange={(e) => onUpdateStop(index, { chi_phi_uoc_tinh: Number(e.target.value) || 0 })}
@@ -184,7 +184,7 @@ function SortableStopCard({
               type="text"
               value={stop.ghi_chu || ''}
               onChange={(e) => onUpdateStop(index, { ghi_chu: e.target.value })}
-              placeholder="Ghi chú hoạt động cá nhân (VD: Check-in chụp ảnh, thưởng thức cafe, mua quà lưu niệm...)"
+              placeholder="Nhập ghi chú hoạt động..."
               className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-teal-500"
             />
           </div>
@@ -592,7 +592,7 @@ export default function ManualTripCreatePage() {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1.5">
               <Compass className="w-4 h-4" />
-              <span>Chức năng tự thiết kế • PB20 (UI_19)</span>
+              <span>Tự thiết kế hành trình</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Tạo lịch trình du lịch <span className="text-teal-600">Thủ công</span>
@@ -671,7 +671,7 @@ export default function ManualTripCreatePage() {
                   required
                   value={tripInfo.ten_lich_trinh}
                   onChange={(e) => setTripInfo({ ...tripInfo, ten_lich_trinh: e.target.value })}
-                  placeholder="VD: Kỳ nghỉ Đà Nẵng 3N2Đ cùng gia đình"
+                  placeholder="Nhập tên lịch trình"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>
@@ -704,11 +704,18 @@ export default function ManualTripCreatePage() {
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="500000"
-                    min="0"
-                    value={tripInfo.ngan_sach_du_kien}
-                    onChange={(e) => setTripInfo({ ...tripInfo, ngan_sach_du_kien: e.target.value })}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Nhập ngân sách dự kiến"
+                    value={
+                      tripInfo.ngan_sach_du_kien !== '' && tripInfo.ngan_sach_du_kien !== null
+                        ? Number(tripInfo.ngan_sach_du_kien).toLocaleString('vi-VN')
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '');
+                      setTripInfo({ ...tripInfo, ngan_sach_du_kien: raw ? Number(raw) : '' });
+                    }}
                     className="w-full pl-4 pr-14 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
@@ -815,7 +822,7 @@ export default function ManualTripCreatePage() {
                           return updated;
                         });
                       }}
-                      placeholder={`VD: Ngày ${days[activeDayIndex].thu_tu_ngay}: Dạo biển và ẩm thực đêm`}
+                      placeholder="Nhập tiêu đề ngày"
                       className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:border-teal-500"
                     />
                   </div>

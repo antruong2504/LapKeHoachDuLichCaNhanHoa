@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import DestinationCard from '../components/DestinationCard';
 import DestinationSkeleton from '../components/DestinationSkeleton';
+import SearchSuggestions from '../components/SearchSuggestions';
+import { normalizeVietnamese } from '../utils/vietnamese';
 import destinationService from '../services/destinationService';
 import categoryService from '../services/categoryService';
 import favoriteService from '../services/favoriteService';
@@ -26,6 +28,7 @@ export default function DestinationsPage() {
 
   // Search & Filter State from URL
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || searchParams.get('search') || '');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState(searchParams.get('tinh_thanh_id') || '');
   const [selectedCategories, setSelectedCategories] = useState(
     searchParams.get('danh_muc_ids') ? searchParams.get('danh_muc_ids').split(',') : []
@@ -67,8 +70,11 @@ export default function DestinationsPage() {
     fetchMetadata();
   }, [user]);
 
-  // Fetch destinations when filters or page changes
+  const latestRequestIdRef = useRef(0);
+
+  // Fetch Destinations (with stale-response protection)
   const fetchDestinations = useCallback(async () => {
+    const reqId = ++latestRequestIdRef.current;
     setLoading(true);
     try {
       const params = {
@@ -82,6 +88,7 @@ export default function DestinationsPage() {
       if (sortBy) params.sort = sortBy;
 
       const res = await destinationService.getDestinations(params);
+      if (reqId !== latestRequestIdRef.current) return;
       if (res.success) {
         setDestinations(res.data || []);
         if (res.pagination) {
@@ -89,16 +96,20 @@ export default function DestinationsPage() {
         }
       }
     } catch (err) {
-      console.error('Lỗi tải danh sách địa điểm:', err);
+      if (reqId === latestRequestIdRef.current) {
+        console.error('Lỗi tải danh sách địa điểm:', err);
+      }
     } finally {
-      setLoading(false);
+      if (reqId === latestRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [keyword, selectedProvince, selectedCategories, sortBy, currentPage]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchDestinations();
-    }, 220);
+    }, 450);
     return () => clearTimeout(timer);
   }, [fetchDestinations]);
 
@@ -183,7 +194,7 @@ export default function DestinationsPage() {
             Khám Phá Địa Điểm Du Lịch Việt Nam
           </h1>
           <p className="mt-2 text-teal-100 text-sm max-w-2xl">
-            Tìm kiếm không dấu thông minh, phân loại đa dạng văn hóa, ẩm thực, giải trí và danh lam thắng cảnh.
+            Khám phá điểm đến theo tỉnh thành, văn hóa, ẩm thực, giải trí và danh lam thắng cảnh.
           </p>
 
           {/* Quick Search Bar inside Banner */}
@@ -192,13 +203,75 @@ export default function DestinationsPage() {
               <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm theo tên, tỉnh thành, danh mục, địa chỉ (VD: HUế, bien da nang, chua, miễn phí)..."
+                aria-label="Tìm kiếm địa điểm du lịch"
+                placeholder="Tìm điểm đến, tỉnh thành, danh mục..."
                 value={keyword}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 onChange={(e) => {
                   setKeyword(e.target.value);
                   setCurrentPage(1);
+                  setShowSuggestions(true);
                 }}
                 className="w-full pl-11 pr-4 py-3 bg-white text-slate-900 rounded-xl text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-400 placeholder-slate-400"
+              />
+              <SearchSuggestions
+                items={
+                  keyword.trim()
+                    ? [
+                        ...destinations
+                          .filter((d) =>
+                            normalizeVietnamese(d.ten_dia_diem).includes(normalizeVietnamese(keyword))
+                          )
+                          .slice(0, 3)
+                          .map((d) => ({ id: d.id, label: d.ten_dia_diem, type: 'destination' })),
+                        ...categoryTree
+                          .flatMap((g) => g.danh_mucs || [])
+                          .filter((c) =>
+                            normalizeVietnamese(c.ten_danh_muc).includes(normalizeVietnamese(keyword))
+                          )
+                          .slice(0, 3)
+                          .map((c) => ({ id: c.id, label: c.ten_danh_muc, type: 'category' })),
+                        ...provinces
+                          .filter((p) =>
+                            normalizeVietnamese(p.ten_tinh_thanh).includes(normalizeVietnamese(keyword))
+                          )
+                          .slice(0, 3)
+                          .map((p) => ({ id: p.id, label: p.ten_tinh_thanh, type: 'province' })),
+                      ].slice(0, 7)
+                    : []
+                }
+                visible={showSuggestions}
+                onSelect={(item) => {
+                  setShowSuggestions(false);
+                  if (item.type === 'destination') {
+                    navigate(`/destinations/${item.id}`);
+                  } else if (item.type === 'category') {
+                    const catIdStr = item.id.toString();
+                    const nextCats = selectedCategories.includes(catIdStr)
+                      ? selectedCategories
+                      : [...selectedCategories, catIdStr];
+                    setSelectedCategories(nextCats);
+                    setKeyword('');
+                    setCurrentPage(1);
+                    updateURLParams({
+                      danh_muc_ids: nextCats.join(','),
+                      search: '',
+                      keyword: '',
+                      page: '1',
+                    });
+                  } else {
+                    setSelectedProvince(item.id.toString());
+                    setKeyword('');
+                    setCurrentPage(1);
+                    updateURLParams({
+                      tinh_thanh_id: item.id.toString(),
+                      search: '',
+                      keyword: '',
+                      page: '1',
+                    });
+                  }
+                }}
               />
               {keyword && (
                 <button
@@ -349,7 +422,7 @@ export default function DestinationsPage() {
                   Không tìm thấy địa điểm nào phù hợp
                 </h3>
                 <p className="text-sm text-slate-500 max-w-md mx-auto">
-                  Hãy thử điều chỉnh từ khóa tìm kiếm (hỗ trợ không dấu tiếng Việt) hoặc bỏ chọn một số bộ lọc danh mục.
+                  Hãy thử từ khóa khác hoặc bỏ bớt bộ lọc đang chọn.
                 </p>
                 {hasActiveFilters && (
                   <button
@@ -363,11 +436,12 @@ export default function DestinationsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-                {destinations.map((dest) => (
+                {destinations.map((dest, idx) => (
                   <DestinationCard
                     key={dest.id}
                     destination={dest}
                     isFavorite={favoriteIds.includes(dest.id.toString())}
+                    priority={idx < 3}
                   />
                 ))}
               </div>
