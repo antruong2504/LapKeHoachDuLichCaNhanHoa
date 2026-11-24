@@ -1,0 +1,384 @@
+// =======================================================
+// TRIPMATE DATABASE SCHEMA (22 BẢNG QUAN HỆ CHUẨN HOÁ)
+// Nguồn: LapKeHoachDuLichCaNhanHoa/doc/Nhom1_6.ProjectDatabase.docx
+// Provider: PostgreSQL (Supabase Cloud) / Hỗ trợ MySQL
+// =======================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -------------------------------------------------------
+// 1. tai_khoans: Tài khoản Khách hàng và Quản trị viên
+// -------------------------------------------------------
+model tai_khoans {
+  id             BigInt    @id @default(autoincrement())
+  ten_dang_nhap  String    @unique @db.VarChar(100)
+  mat_khau_hash  String    @db.VarChar(255)
+  ho_ten         String    @db.VarChar(150)
+  email          String    @unique @db.VarChar(255)
+  so_dien_thoai  String    @unique @db.VarChar(10)
+  ngay_sinh      DateTime? @db.Date
+  gioi_tinh      String?   @db.VarChar(30)
+  anh_dai_dien   String?   @db.VarChar(500)
+  vai_tro        String    @default("khach_hang") @db.VarChar(20) // khach_hang, admin
+  trang_thai     String    @default("hoat_dong") @db.VarChar(20)  // hoat_dong, bi_khoa
+  ly_do_khoa     String?   @db.Text
+  thoi_gian_khoa DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+
+  // Quan hệ
+  yeu_thichs          dia_diem_yeu_thichs[]
+  lich_trinhs         lich_trinhs[]
+  ban_nhap_ais        ban_nhap_ais[]
+  cam_nangs           cam_nangs[]
+  chia_se_cam_nangs   chia_se_cam_nangs[]
+  binh_luan_cam_nangs binh_luan_cam_nangs[]
+  danh_gias           danh_gias[]
+  thanh_vien_nhoms    thanh_vien_nhoms[]
+  tin_nhans           tin_nhans[]
+  thong_baos          thong_baos[]
+}
+
+// -------------------------------------------------------
+// 2. tinh_thanh_phos: Danh mục tỉnh / thành phố Việt Nam
+// -------------------------------------------------------
+model tinh_thanh_phos {
+  id             BigInt   @id @default(autoincrement())
+  ten_tinh_thanh String   @unique @db.VarChar(150)
+  ma_tinh_thanh  String?  @unique @db.VarChar(30)
+
+  // Quan hệ
+  dia_diems   dia_diems[]
+  lich_trinhs lich_trinhs[]
+}
+
+// -------------------------------------------------------
+// 3. nhom_danh_mucs: Nhóm danh mục cấp 1 do Admin quản lý
+// -------------------------------------------------------
+model nhom_danh_mucs {
+  id         BigInt   @id @default(autoincrement())
+  ten_nhom   String   @unique @db.VarChar(150)
+  mo_ta      String?  @db.Text
+  created_at DateTime @default(now())
+
+  // Quan hệ
+  danh_mucs danh_mucs[]
+}
+
+// -------------------------------------------------------
+// 4. danh_mucs: Danh mục con cấp 2 (tối đa 10 mục con/nhóm)
+// -------------------------------------------------------
+model danh_mucs {
+  id               BigInt   @id @default(autoincrement())
+  nhom_danh_muc_id BigInt
+  ten_danh_muc     String   @unique @db.VarChar(150)
+  mo_ta            String?  @db.Text
+
+  // Quan hệ
+  nhom_danh_muc    nhom_danh_mucs       @relation(fields: [nhom_danh_muc_id], references: [id], onDelete: Cascade)
+  dia_diem_danh_mucs dia_diem_danh_mucs[]
+}
+
+// -------------------------------------------------------
+// 5. dia_diems: Địa điểm du lịch (hỗ trợ xóa mềm trang_thai)
+// -------------------------------------------------------
+model dia_diems {
+  id             BigInt    @id @default(autoincrement())
+  tinh_thanh_id  BigInt
+  ten_dia_diem   String    @db.VarChar(255)
+  mo_ta_ngan     String?   @db.Text
+  mo_ta_chi_tiet String?   @db.Text
+  dia_chi        String?   @db.VarChar(500)
+  vi_do          Decimal?  @db.Decimal(10, 7)
+  kinh_do        Decimal?  @db.Decimal(10, 7)
+  gia_tham_quan  Decimal?  @db.Decimal(15, 2)
+  anh_dai_dien   String?   @db.VarChar(500)
+  noi_bat        Boolean   @default(false)
+  diem_danh_gia_tb Decimal? @default(0) @db.Decimal(3, 2)
+  trang_thai     String    @default("hien_thi") @db.VarChar(20) // hien_thi, da_xoa (Xóa mềm)
+  phien_ban      Int       @default(1) // Optimistic locking
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+
+  // Quan hệ
+  tinh_thanh          tinh_thanh_phos        @relation(fields: [tinh_thanh_id], references: [id], onDelete: Restrict)
+  dia_diem_danh_mucs  dia_diem_danh_mucs[]
+  dia_diem_hinh_anhs  dia_diem_hinh_anhs[]
+  yeu_thichs          dia_diem_yeu_thichs[]
+  lich_trinh_chi_tiets lich_trinh_chi_tiets[]
+  danh_gias           danh_gias[]
+}
+
+// -------------------------------------------------------
+// 6. dia_diem_danh_mucs: Bảng nối N-N giữa Địa điểm và Danh mục con
+// -------------------------------------------------------
+model dia_diem_danh_mucs {
+  dia_diem_id BigInt
+  danh_muc_id BigInt
+
+  dia_diem dia_diems @relation(fields: [dia_diem_id], references: [id], onDelete: Cascade)
+  danh_muc danh_mucs @relation(fields: [danh_muc_id], references: [id], onDelete: Cascade)
+
+  @@id([dia_diem_id, danh_muc_id])
+}
+
+// -------------------------------------------------------
+// 7. dia_diem_hinh_anhs: Bộ sưu tập ảnh bổ sung của địa điểm
+// -------------------------------------------------------
+model dia_diem_hinh_anhs {
+  id          BigInt   @id @default(autoincrement())
+  dia_diem_id BigInt
+  duong_dan   String   @db.VarChar(500)
+  thu_tu      Int      @default(0)
+
+  dia_diem dia_diems @relation(fields: [dia_diem_id], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// 8. dia_diem_yeu_thichs: Danh sách yêu thích của Khách hàng
+// -------------------------------------------------------
+model dia_diem_yeu_thichs {
+  id          BigInt   @id @default(autoincrement())
+  tai_khoan_id BigInt
+  dia_diem_id BigInt
+  created_at  DateTime @default(now())
+
+  tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+  dia_diem  dia_diems  @relation(fields: [dia_diem_id], references: [id], onDelete: Cascade)
+
+  @@unique([tai_khoan_id, dia_diem_id])
+}
+
+// -------------------------------------------------------
+// 9. lich_trinhs: Lịch trình du lịch (AI hoặc Thủ công)
+// -------------------------------------------------------
+model lich_trinhs {
+  id                         BigInt    @id @default(autoincrement())
+  tai_khoan_id               BigInt
+  tinh_thanh_id              BigInt
+  ten_lich_trinh             String?   @db.VarChar(255)
+  nguon_tao                  String    @db.VarChar(20) // ai, thu_cong
+  ngay_bat_dau               DateTime  @db.Date
+  ngay_ket_thuc              DateTime  @db.Date
+  ngan_sach_du_kien          Decimal?  @db.Decimal(15, 2)
+  so_nguoi                   Int?
+  so_thich                   String?   @db.Text
+  tong_chi_phi_uoc_tinh      Decimal?  @db.Decimal(15, 2)
+  da_xac_nhan_vuot_ngan_sach Boolean   @default(false)
+  phien_ban                  Int       @default(1) // Optimistic Locking
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime? @updatedAt
+
+  tai_khoan    tai_khoans       @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+  tinh_thanh   tinh_thanh_phos  @relation(fields: [tinh_thanh_id], references: [id], onDelete: Restrict)
+  ngays        lich_trinh_ngays[]
+  ban_nhap_ais ban_nhap_ais[]
+}
+
+// -------------------------------------------------------
+// 10. lich_trinh_ngays: Chi tiết từng ngày trong lịch trình
+// -------------------------------------------------------
+model lich_trinh_ngays {
+  id             BigInt   @id @default(autoincrement())
+  lich_trinh_id  BigInt
+  ngay_tham_quan DateTime @db.Date
+  thu_tu_ngay    Int
+  ghi_chu        String?  @db.Text
+
+  lich_trinh lich_trinhs            @relation(fields: [lich_trinh_id], references: [id], onDelete: Cascade)
+  chi_tiets  lich_trinh_chi_tiets[]
+
+  @@unique([lich_trinh_id, thu_tu_ngay])
+}
+
+// -------------------------------------------------------
+// 11. lich_trinh_chi_tiets: Chặng tham quan (Snapshot dữ liệu)
+// -------------------------------------------------------
+model lich_trinh_chi_tiets {
+  id                 BigInt   @id @default(autoincrement())
+  lich_trinh_ngay_id BigInt
+  dia_diem_id        BigInt?
+  thu_tu             Int
+  buoi               String?  @db.VarChar(30) // sang, chieu, toi
+  thoi_gian_du_kien  String?  @db.VarChar(20)
+  ten_dia_diem_luu   String   @db.VarChar(255) // Snapshot
+  dia_chi_luu        String?  @db.VarChar(500) // Snapshot
+  vi_do_luu          Decimal? @db.Decimal(10, 7) // Snapshot
+  kinh_do_luu        Decimal? @db.Decimal(10, 7) // Snapshot
+  chi_phi_uoc_tinh   Decimal? @db.Decimal(15, 2)
+  ghi_chu            String?  @db.Text
+
+  lich_trinh_ngay lich_trinh_ngays @relation(fields: [lich_trinh_ngay_id], references: [id], onDelete: Cascade)
+  dia_diem        dia_diems?       @relation(fields: [dia_diem_id], references: [id], onDelete: SetNull)
+}
+
+// -------------------------------------------------------
+// 12. ban_nhap_ais: Lưu nháp kết quả AI trước khi lưu chính thức
+// -------------------------------------------------------
+model ban_nhap_ais {
+  id                 BigInt   @id @default(autoincrement())
+  tai_khoan_id       BigInt
+  lich_trinh_goc_id  BigInt?
+  du_lieu_dau_vao    Json     // 6 thông tin bắt buộc
+  noi_dung_ket_qua   Json?    // Lịch trình AI đề xuất
+  trang_thai         String   @db.VarChar(30) // dang_xu_ly, hop_le, loi, huy
+  vuot_ngan_sach     Boolean  @default(false)
+  created_at         DateTime @default(now())
+
+  tai_khoan       tai_khoans   @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+  lich_trinh_goc  lich_trinhs? @relation(fields: [lich_trinh_goc_id], references: [id], onDelete: SetNull)
+
+  @@map("ban_nhap_ais")
+}
+
+// -------------------------------------------------------
+// 13. cam_nangs: Cẩm nang du lịch do Khách hàng chia sẻ
+// -------------------------------------------------------
+model cam_nangs {
+  id           BigInt   @id @default(autoincrement())
+  tac_gia_id   BigInt
+  tieu_de      String   @db.VarChar(255)
+  mo_ta_ngan   String?  @db.Text
+  noi_dung     String   @db.Text
+  anh_dai_dien String?  @db.VarChar(500)
+  ngay_dang    DateTime @default(now())
+
+  tac_gia               tai_khoans              @relation(fields: [tac_gia_id], references: [id], onDelete: Cascade)
+  cam_nang_anh_lien_kets cam_nang_anh_lien_kets[]
+  chia_se_cam_nangs     chia_se_cam_nangs[]
+  binh_luan_cam_nangs   binh_luan_cam_nangs[]
+  danh_gias             danh_gias[]
+}
+
+// -------------------------------------------------------
+// 14. cam_nang_hinh_anhs: Kho lưu trữ ảnh cẩm nang
+// -------------------------------------------------------
+model cam_nang_hinh_anhs {
+  id         BigInt   @id @default(autoincrement())
+  duong_dan  String   @db.VarChar(500)
+  created_at DateTime @default(now())
+
+  cam_nang_anh_lien_kets cam_nang_anh_lien_kets[]
+}
+
+// -------------------------------------------------------
+// 15. cam_nang_anh_lien_kets: Bảng nối bảo toàn ảnh dùng chung
+// -------------------------------------------------------
+model cam_nang_anh_lien_kets {
+  cam_nang_id BigInt
+  hinh_anh_id BigInt
+
+  cam_nang cam_nangs          @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
+  hinh_anh cam_nang_hinh_anhs @relation(fields: [hinh_anh_id], references: [id], onDelete: Cascade)
+
+  @@id([cam_nang_id, hinh_anh_id])
+}
+
+// -------------------------------------------------------
+// 16. chia_se_cam_nangs: Ghi nhận chia sẻ cẩm nang
+// -------------------------------------------------------
+model chia_se_cam_nangs {
+  id           BigInt   @id @default(autoincrement())
+  cam_nang_id  BigInt
+  tai_khoan_id BigInt
+  created_at   DateTime @default(now())
+
+  cam_nang  cam_nangs  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
+  tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// 17. binh_luan_cam_nangs: Bình luận cẩm nang
+// -------------------------------------------------------
+model binh_luan_cam_nangs {
+  id           BigInt   @id @default(autoincrement())
+  cam_nang_id  BigInt
+  tai_khoan_id BigInt
+  noi_dung     String   @db.Text
+  created_at   DateTime @default(now())
+
+  cam_nang  cam_nangs  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
+  tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// 18. danh_gias: Đánh giá địa điểm (1-5 sao) hoặc cẩm nang
+// -------------------------------------------------------
+model danh_gias {
+  id           BigInt    @id @default(autoincrement())
+  tai_khoan_id BigInt
+  dia_diem_id  BigInt?
+  cam_nang_id  BigInt?
+  so_sao       Int       // 1 đến 5 sao
+  noi_dung     String?   @db.Text
+  created_at   DateTime  @default(now())
+  updated_at   DateTime? @updatedAt
+
+  tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+  dia_diem  dia_diems?  @relation(fields: [dia_diem_id], references: [id], onDelete: SetNull)
+  cam_nang  cam_nangs?  @relation(fields: [cam_nang_id], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// 19. nhom_tro_chuyens: Phòng chat nhóm du lịch
+// -------------------------------------------------------
+model nhom_tro_chuyens {
+  id         BigInt   @id @default(autoincrement())
+  ten_nhom   String?  @db.VarChar(255)
+  created_at DateTime @default(now())
+
+  thanh_viens thanh_vien_nhoms[]
+  tin_nhans   tin_nhans[]
+}
+
+// -------------------------------------------------------
+// 20. thanh_vien_nhoms: Thành viên trong phòng chat
+// -------------------------------------------------------
+model thanh_vien_nhoms {
+  nhom_id       BigInt
+  tai_khoan_id  BigInt
+  ngay_tham_gia DateTime @default(now())
+
+  nhom      nhom_tro_chuyens @relation(fields: [nhom_id], references: [id], onDelete: Cascade)
+  tai_khoan tai_khoans       @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+
+  @@id([nhom_id, tai_khoan_id])
+}
+
+// -------------------------------------------------------
+// 21. tin_nhans: Tin nhắn trong nhóm chat
+// -------------------------------------------------------
+model tin_nhans {
+  id           BigInt   @id @default(autoincrement())
+  nhom_id      BigInt
+  nguoi_gui_id BigInt
+  noi_dung     String   @db.Text
+  created_at   DateTime @default(now())
+
+  nhom      nhom_tro_chuyens @relation(fields: [nhom_id], references: [id], onDelete: Cascade)
+  nguoi_gui tai_khoans       @relation(fields: [nguoi_gui_id], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// 22. thong_baos: Thông báo người dùng (UTC+7)
+// -------------------------------------------------------
+model thong_baos {
+  id            BigInt    @id @default(autoincrement())
+  tai_khoan_id  BigInt
+  tieu_de       String    @db.VarChar(255)
+  noi_dung      String    @db.Text
+  loai_thong_bao String?  @db.VarChar(50)
+  da_doc        Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  read_at       DateTime?
+
+  tai_khoan tai_khoans @relation(fields: [tai_khoan_id], references: [id], onDelete: Cascade)
+}

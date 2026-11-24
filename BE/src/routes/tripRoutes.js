@@ -1,21 +1,30 @@
-import express from 'express'
+import express from 'express';
 import {
-  getMyTrips,
+  getTrips,
   getTripById,
-  createTrip,
+  createManualTrip,
   updateTrip,
   deleteTrip,
-  generatePlan,
-} from '../controllers/tripController.js'
-import { protect } from '../middleware/authMiddleware.js'
+} from '../controllers/tripController.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-// Tất cả trip routes đều yêu cầu đăng nhập
-router.use(protect)
+// Tất cả các thao tác lịch trình yêu cầu đăng nhập
+router.use(authenticate);
 
-router.route('/').get(getMyTrips).post(createTrip)
-router.post('/generate', generatePlan)
-router.route('/:id').get(getTripById).put(updateTrip).delete(deleteTrip)
+// PB20: Tạo lịch trình thủ công (UI_19)
+router.post('/manual', createManualTrip);
 
-export default router
+// PB09: Lấy danh sách lịch trình của tôi (UI_20) & Tạo lịch trình
+router.route('/')
+  .get(getTrips)
+  .post(createManualTrip);
+
+// PB09: Xem chi tiết (UI_21), Cập nhật (Optimistic Locking) và Xóa (UI_22)
+router.route('/:id')
+  .get(getTripById)
+  .put(updateTrip)
+  .delete(deleteTrip);
+
+export default router;

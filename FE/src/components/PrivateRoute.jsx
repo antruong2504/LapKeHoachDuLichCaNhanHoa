@@ -1,15 +1,11 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function PrivateRoute() {
-  const { user } = useAuth()
-  return user ? <Outlet /> : <Navigate to="/login" replace />
-}
-import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+  const { user, loading } = useAuth();
 
-export default function PrivateRoute() {
-  const { user } = useAuth()
-  return user ? <Outlet /> : <Navigate to="/login" replace />
+  if (loading) return <LoadingSpinner text="Đang kiểm tra phiên đăng nhập..." />;
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
-

@@ -1,57 +1,47 @@
-import axios from 'axios'
+import axios from 'axios';
+
+// Tự động nhận diện URL: dùng /api khi có Vite proxy, fallback trực tiếp 127.0.0.1:5001
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return '/api';
+};
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  headers: { 'Content-Type': 'application/json' },
-})
+  baseURL: getBaseURL(),
+  timeout: 120000, // 2 phút cho AI generation
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-// Tự động gắn token vào header
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// Xử lý lỗi 401 (hết hạn token)
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+// Request interceptor: tự động đính kèm JWT Bearer Token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return Promise.reject(err)
-  }
-)
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-export default api
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  headers: { 'Content-Type': 'application/json' },
-})
-
-// Tự động gắn token vào header
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// Xử lý lỗi 401 (hết hạn token)
+// Response interceptor: xử lý 401 Unauthorized
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+  (response) => response.data,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Không tự chuyển trang nếu đang ở trang login/register
+      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+        window.location.href = '/login';
+      }
     }
-    return Promise.reject(err)
+    return Promise.reject(error.response?.data || error);
   }
-)
+);
 
-export default api
-
+export default api;

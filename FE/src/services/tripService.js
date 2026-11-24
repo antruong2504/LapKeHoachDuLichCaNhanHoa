@@ -1,68 +1,30 @@
-import api from './api'
+import api from './api';
 
 export const tripService = {
-  // Lấy danh sách chuyến đi của user
+  // Lấy danh sách lịch trình cá nhân (PB09 - UI_20)
   getMyTrips: async () => {
-    const { data } = await api.get('/trips')
-    return data
+    return await api.get('/trips');
   },
 
-  // Lấy chi tiết 1 chuyến đi
+  // Lấy chi tiết lịch trình (PB09 - UI_21)
   getTripById: async (id) => {
-    const { data } = await api.get(`/trips/${id}`)
-    return data
+    return await api.get(`/trips/${id}`);
   },
 
-  // Tạo chuyến đi mới
-  createTrip: async (tripData) => {
-    const { data } = await api.post('/trips', tripData)
-    return data
+  // Tạo lịch trình thủ công (PB20 - UI_19)
+  createManualTrip: async (tripData) => {
+    return await api.post('/trips/manual', tripData);
   },
 
-  // Cập nhật chuyến đi
+  // Cập nhật lịch trình - Optimistic Locking (PB09 - UI_21)
   updateTrip: async (id, tripData) => {
-    const { data } = await api.put(`/trips/${id}`, tripData)
-    return data
+    return await api.put(`/trips/${id}`, tripData);
   },
 
-  // Xóa chuyến đi
+  // Xóa lịch trình (PB09 - UI_22)
   deleteTrip: async (id) => {
-    const { data } = await api.delete(`/trips/${id}`)
-    return data
+    return await api.delete(`/trips/${id}`);
   },
+};
 
-  // Gợi ý kế hoạch AI
-  generatePlan: async (preferences) => {
-    const { data } = await api.post('/trips/generate', preferences)
-    return data
-  },
-}
-import api from './api'
-
-export const tripService = {
-  getMyTrips: async () => {
-    const { data } = await api.get('/trips')
-    return data
-  },
-  getTripById: async (id) => {
-    const { data } = await api.get(`/trips/${id}`)
-    return data
-  },
-  createTrip: async (tripData) => {
-    const { data } = await api.post('/trips', tripData)
-    return data
-  },
-  updateTrip: async (id, tripData) => {
-    const { data } = await api.put(`/trips/${id}`, tripData)
-    return data
-  },
-  deleteTrip: async (id) => {
-    const { data } = await api.delete(`/trips/${id}`)
-    return data
-  },
-  generatePlan: async (preferences) => {
-    const { data } = await api.post('/trips/generate', preferences)
-    return data
-  },
-}
-
+export default tripService;

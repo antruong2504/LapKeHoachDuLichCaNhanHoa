@@ -1,41 +1,24 @@
-import api from './api'
+import api from './api';
 
 export const authService = {
-  login: async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password })
-    return data
+  login: async (ten_dang_nhap, mat_khau) => {
+    return await api.post('/auth/login', { ten_dang_nhap, mat_khau });
   },
   register: async (userData) => {
-    const { data } = await api.post('/auth/register', userData)
-    return data
+    return await api.post('/auth/register', userData);
   },
   getProfile: async () => {
-    const { data } = await api.get('/auth/me')
-    return data
+    return await api.get('/users/profile');
   },
   updateProfile: async (userData) => {
-    const { data } = await api.put('/auth/me', userData)
-    return data
+    return await api.put('/users/profile', userData);
   },
-}
-import api from './api'
-
-export const authService = {
-  login: async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password })
-    return data
+  uploadAvatar: async (formData) => {
+    return await api.post('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
-  register: async (userData) => {
-    const { data } = await api.post('/auth/register', userData)
-    return data
+  changePassword: async (passwordData) => {
+    return await api.put('/users/change-password', passwordData);
   },
-  getProfile: async () => {
-    const { data } = await api.get('/auth/me')
-    return data
-  },
-  updateProfile: async (userData) => {
-    const { data } = await api.put('/auth/me', userData)
-    return data
-  },
-}
-
+};

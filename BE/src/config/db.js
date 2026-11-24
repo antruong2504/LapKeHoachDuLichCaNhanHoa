@@ -1,11 +1,14 @@
-import mongoose from 'mongoose'
+import { PrismaClient } from '@prisma/client';
 
-export const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dulich_ca_nhan_hoa')
-    console.log(`✅ MongoDB đã kết nối: ${conn.connection.host}`)
-  } catch (error) {
-    console.error(`❌ Lỗi kết nối MongoDB: ${error.message}`)
-    process.exit(1)
+let prisma;
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient();
+} else {
+  if (!global.__prisma) {
+    global.__prisma = new PrismaClient();
   }
+  prisma = global.__prisma;
 }
+
+export default prisma;
