@@ -107,7 +107,7 @@ npm install
 npm run prisma:generate
 npm run prisma:push
 
-# 4. Nạp dữ liệu mẫu (63 tỉnh/thành Việt Nam, danh mục, địa điểm, tài khoản mẫu, cẩm nang)
+# 4. Nạp dữ liệu mẫu (chỉ cần chạy nếu dùng Supabase mới; script đã chống trùng lặp khi chạy lại)
 npm run seed
 
 # 5. Khởi động Backend Server

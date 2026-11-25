@@ -374,21 +374,26 @@ async function main() {
     const pId = provinces[item.tinh];
     if (!pId) continue;
 
-    const dest = await prisma.dia_diems.create({
-      data: {
-        tinh_thanh_id: pId,
-        ten_dia_diem: item.ten_dia_diem,
-        mo_ta_ngan: item.mo_ta_ngan,
-        mo_ta_chi_tiet: item.mo_ta_chi_tiet,
-        dia_chi: item.dia_chi,
-        vi_do: item.vi_do,
-        kinh_do: item.kinh_do,
-        gia_tham_quan: item.gia_tham_quan,
-        anh_dai_dien: item.anh_dai_dien,
-        noi_bat: item.noi_bat,
-        trang_thai: 'hien_thi',
-      },
+    let dest = await prisma.dia_diems.findFirst({
+      where: { tinh_thanh_id: pId, ten_dia_diem: item.ten_dia_diem },
     });
+    if (!dest) {
+      dest = await prisma.dia_diems.create({
+        data: {
+          tinh_thanh_id: pId,
+          ten_dia_diem: item.ten_dia_diem,
+          mo_ta_ngan: item.mo_ta_ngan,
+          mo_ta_chi_tiet: item.mo_ta_chi_tiet,
+          dia_chi: item.dia_chi,
+          vi_do: item.vi_do,
+          kinh_do: item.kinh_do,
+          gia_tham_quan: item.gia_tham_quan,
+          anh_dai_dien: item.anh_dai_dien,
+          noi_bat: item.noi_bat,
+          trang_thai: 'hien_thi',
+        },
+      });
+    }
 
     // Bảng nối danh mục
     for (const catName of item.cats) {
@@ -406,57 +411,71 @@ async function main() {
   console.log('✅ Đã tạo Địa điểm du lịch thực tế:', destinationsData.length);
 
   // 5. Cẩm nang mẫu
-  const guide = await prisma.cam_nangs.create({
-    data: {
-      tac_gia_id: user1.id,
-      tieu_de: 'Kinh nghiệm du lịch Đà Nẵng - Hội An 4 ngày 3 đêm tự túc',
-      mo_ta_ngan: 'Lịch trình chi tiết khám phá trọn vẹn Cầu Rồng, Bà Nà Hills, Sơn Trà và Phố Cổ Hội An với chi phí cực kỳ hợp lý.',
-      noi_dung: 'Đà Nẵng là điểm đến lý tưởng cho mọi tín đồ du lịch. Ngày 1: Nhận phòng khách sạn, tắm biển Mỹ Khê và thưởng thức hải sản. Ngày 2: Chinh phục đỉnh Bà Nà Hills và check-in Cầu Vàng. Ngày 3: Bán đảo Sơn Trà, sau đó ghé Hội An thả đèn hoa đăng. Ngày 4: Mua quà chợ Cồn và bay về!',
-      anh_dai_dien: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800',
-    },
-  });
+  const guideTitle = 'Kinh nghiệm du lịch Đà Nẵng - Hội An 4 ngày 3 đêm tự túc';
+  let guide = await prisma.cam_nangs.findFirst({ where: { tieu_de: guideTitle } });
+  if (!guide) {
+    guide = await prisma.cam_nangs.create({
+      data: {
+        tac_gia_id: user1.id,
+        tieu_de: guideTitle,
+        mo_ta_ngan: 'Lịch trình chi tiết khám phá trọn vẹn Cầu Rồng, Bà Nà Hills, Sơn Trà và Phố Cổ Hội An với chi phí cực kỳ hợp lý.',
+        noi_dung: 'Đà Nẵng là điểm đến lý tưởng cho mọi tín đồ du lịch. Ngày 1: Nhận phòng khách sạn, tắm biển Mỹ Khê và thưởng thức hải sản. Ngày 2: Chinh phục đỉnh Bà Nà Hills và check-in Cầu Vàng. Ngày 3: Bán đảo Sơn Trà, sau đó ghé Hội An thả đèn hoa đăng. Ngày 4: Mua quà chợ Cồn và bay về!',
+        anh_dai_dien: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800',
+      },
+    });
+  }
   console.log('✅ Đã tạo Cẩm nang du lịch mẫu:', guide.tieu_de);
 
   // 6. Nhóm trò chuyện mẫu
-  const group = await prisma.nhom_tro_chuyens.create({
-    data: {
-      ten_nhom: 'Hội Phượt Đà Nẵng 2026',
-    },
+  let group = await prisma.nhom_tro_chuyens.findFirst({
+    where: { ten_nhom: 'Hội Phượt Đà Nẵng 2026' },
   });
+  if (!group) {
+    group = await prisma.nhom_tro_chuyens.create({
+      data: {
+        ten_nhom: 'Hội Phượt Đà Nẵng 2026',
+      },
+    });
 
-  await prisma.thanh_vien_nhoms.createMany({
-    data: [
-      { nhom_id: group.id, tai_khoan_id: user1.id },
-      { nhom_id: group.id, tai_khoan_id: user2.id },
-    ],
-    skipDuplicates: true,
-  });
+    await prisma.thanh_vien_nhoms.createMany({
+      data: [
+        { nhom_id: group.id, tai_khoan_id: user1.id },
+        { nhom_id: group.id, tai_khoan_id: user2.id },
+      ],
+      skipDuplicates: true,
+    });
 
-  await prisma.tin_nhans.createMany({
-    data: [
-      { nhom_id: group.id, nguoi_gui_id: user1.id, noi_dung: 'Chào Thúy An, cuối tuần này mình đi Bà Nà Hills nhé!' },
-      { nhom_id: group.id, nguoi_gui_id: user2.id, noi_dung: 'Ok bạn ơi, mình đặt vé cáp treo sớm cho đỡ đông nha.' },
-    ],
-  });
+    await prisma.tin_nhans.createMany({
+      data: [
+        { nhom_id: group.id, nguoi_gui_id: user1.id, noi_dung: 'Chào bạn, cuối tuần này mình đi Bà Nà Hills nhé!' },
+        { nhom_id: group.id, nguoi_gui_id: user2.id, noi_dung: 'Ok bạn ơi, mình đặt vé cáp treo sớm cho đỡ đông nha.' },
+      ],
+    });
+  }
   console.log('✅ Đã tạo Nhóm chat & Tin nhắn mẫu');
 
   // 7. Thông báo mẫu
-  await prisma.thong_baos.createMany({
-    data: [
-      {
-        tai_khoan_id: user1.id,
-        tieu_de: 'Chào mừng bạn đến với TripMate!',
-        noi_dung: 'Hãy bắt đầu tạo lịch trình du lịch thông minh bằng AI đầu tiên của bạn ngay hôm nay.',
-        loai_thong_bao: 'he_thong',
-      },
-      {
-        tai_khoan_id: user2.id,
-        tieu_de: 'Chào mừng bạn đến với TripMate!',
-        noi_dung: 'Hãy bắt đầu tạo lịch trình du lịch thông minh bằng AI đầu tiên của bạn ngay hôm nay.',
-        loai_thong_bao: 'he_thong',
-      },
-    ],
+  const existingNotifCount = await prisma.thong_baos.count({
+    where: { tieu_de: 'Chào mừng bạn đến với TripMate!' },
   });
+  if (existingNotifCount === 0) {
+    await prisma.thong_baos.createMany({
+      data: [
+        {
+          tai_khoan_id: user1.id,
+          tieu_de: 'Chào mừng bạn đến với TripMate!',
+          noi_dung: 'Hãy bắt đầu tạo lịch trình du lịch thông minh bằng AI đầu tiên của bạn ngay hôm nay.',
+          loai_thong_bao: 'he_thong',
+        },
+        {
+          tai_khoan_id: user2.id,
+          tieu_de: 'Chào mừng bạn đến với TripMate!',
+          noi_dung: 'Hãy bắt đầu tạo lịch trình du lịch thông minh bằng AI đầu tiên của bạn ngay hôm nay.',
+          loai_thong_bao: 'he_thong',
+        },
+      ],
+    });
+  }
   console.log('✅ Đã tạo Thông báo chào mừng');
 
   console.log('--- SEED TOÀN BỘ DỮ LIỆU THÀNH CÔNG VÀO SUPABASE! ---');
