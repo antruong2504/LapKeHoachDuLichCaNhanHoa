@@ -43,7 +43,55 @@ TripMate là nền tảng hỗ trợ người dùng khám phá địa điểm du
 
 ---
 
-## 4. Hướng dẫn cài đặt & khởi chạy (Windows PowerShell)
+## 4. Hướng dẫn lấy API Key & cấu hình file `.env`
+
+Mỗi thành viên sau khi clone repo cần tạo `BE/.env` và `FE/.env` từ file `.env.example` và điền các khóa sau (không commit file `.env` lên Git):
+
+### 4.1. Lấy thông tin Supabase (`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_*`)
+1. Đăng nhập **[Supabase Dashboard](https://supabase.com/dashboard)** → chọn hoặc tạo mới 1 Project PostgreSQL.
+2. **Lấy chuỗi kết nối Database (`DATABASE_URL` & `DIRECT_URL`)**:
+   - Bấm nút **Connect** trên thanh trên cùng (hoặc vào **Project Settings → Database**).
+   - Tab **Connection String → URI**:
+     - Chọn chế độ **Transaction pooler** (cổng `6543`, có `?pgbouncer=true`) → copy dán vào `DATABASE_URL` trong `BE/.env`.
+     - Chọn chế độ **Direct connection** (cổng `5432`) → copy dán vào `DIRECT_URL` trong `BE/.env`.
+   - Thay `[YOUR-PASSWORD]` bằng mật khẩu database của project.
+3. **Lấy Supabase API & Storage Keys**:
+   - Vào **Project Settings → API** (hoặc **API Keys / Data API**):
+     - `SUPABASE_URL`: copy **Project URL** (`https://<project-ref>.supabase.co`).
+     - `SUPABASE_ANON_KEY`: copy key **anon / public**.
+     - `SUPABASE_SERVICE_ROLE_KEY`: copy key **service_role** (chỉ lưu ở `BE/.env`, tuyệt đối không đưa lên Frontend).
+   - Vào mục **Storage → New bucket**: tạo bucket tên `tripmate-media` (bật **Public bucket** để hiển thị ảnh trực tiếp), điền `SUPABASE_STORAGE_BUCKET=tripmate-media`.
+
+### 4.2. Lấy `GEMINI_API_KEY` (Google Gemini AI — bắt buộc cho lập lịch AI)
+1. Truy cập **[Google AI Studio](https://aistudio.google.com/apikey)** và đăng nhập tài khoản Google.
+2. Bấm **Create API Key** → chọn project (hoặc tạo project mới) → copy API key.
+3. Dán vào `BE/.env`:
+   ```env
+   GEMINI_API_KEY=AIzaSy...
+   GEMINI_MODEL=gemini-4-hydrogen
+   ```
+   > Nếu `gemini-4-hydrogen` hết quota miễn phí trong ngày, hệ thống tự động chuyển sang model dự phòng (`gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`).
+
+### 4.3. Lấy `OPENWEATHER_API_KEY` (Thời tiết — tùy chọn)
+1. Đăng ký tài khoản miễn phí tại **[OpenWeatherMap](https://home.openweathermap.org/api_keys)**.
+2. Vào mục **My API Keys** → tạo key mới và dán vào `OPENWEATHER_API_KEY` trong `BE/.env` (key mới tạo thường mất 10–30 phút để kích hoạt).
+3. Nếu bỏ trống `OPENWEATHER_API_KEY`, hệ thống vẫn hoạt động bình thường nhờ tự động lấy dữ liệu thời tiết thời gian thực từ **Open-Meteo** (không cần API key).
+
+### 4.4. Các biến môi trường còn lại (`BE/.env` & `FE/.env`)
+- Trong `BE/.env`:
+  - `PORT=5001`
+  - `JWT_SECRET`: đặt một chuỗi bí mật bất kỳ (khuyến nghị >= 32 ký tự).
+  - `CLIENT_URL=http://localhost:3000`
+- Trong `FE/.env`:
+  ```env
+  VITE_API_URL=http://localhost:5001/api
+  VITE_SOCKET_URL=http://localhost:5001
+  VITE_OSRM_BASE_URL=https://router.project-osrm.org
+  ```
+
+---
+
+## 5. Hướng dẫn cài đặt & khởi chạy (Windows PowerShell)
 
 ### Bước 1: Cài đặt & Cấu hình Backend (`BE/`)
 ```powershell
@@ -88,7 +136,7 @@ npm run dev
 
 ---
 
-## 5. Tài khoản mẫu dùng để kiểm thử
+## 6. Tài khoản mẫu dùng để kiểm thử
 
 Sau khi chạy `npm run seed` trong `BE/`, hệ thống có sẵn các tài khoản sau:
 
@@ -101,7 +149,7 @@ Sau khi chạy `npm run seed` trong `BE/`, hệ thống có sẵn các tài kho�
 
 ---
 
-## 6. Kiểm thử nhanh Backend
+## 7. Kiểm thử nhanh Backend
 
 Trong thư mục `BE/` (khi server đang chạy tại cổng `5001`):
 ```powershell
@@ -113,7 +161,7 @@ node tests/test_pb08.js
 
 ---
 
-## 7. Cấu trúc thư mục dự án
+## 8. Cấu trúc thư mục dự án
 
 ```text
 LapKeHoachDuLichCaNhanHoa/
