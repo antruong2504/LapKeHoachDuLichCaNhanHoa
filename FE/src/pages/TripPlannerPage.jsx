@@ -753,7 +753,7 @@ export default function TripPlannerPage() {
                   rows="2"
                   value={formData.ghi_chu_so_thich}
                   onChange={(e) => setFormData({ ...formData, ghi_chu_so_thich: e.target.value })}
-                  placeholder="Ví dụ: thích quán cà phê yên tĩnh, không ăn hải sản, tránh đi bộ đường dốc, ưu tiên điểm chụp ảnh sáng sớm..."
+                  placeholder="Nhập ghi chú hoặc yêu cầu riêng của bạn"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
               </div>
@@ -869,7 +869,7 @@ export default function TripPlannerPage() {
                       type="text"
                       value={formData.diem_xuat_phat}
                       onChange={(e) => setFormData((prev) => ({ ...prev, diem_xuat_phat: e.target.value }))}
-                      placeholder="VD: Sân bay Đà Nẵng, Ga Huế..."
+                      placeholder="Nhập điểm xuất phát"
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
