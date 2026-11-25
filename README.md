@@ -1,127 +1,144 @@
-# TRIPMATE - NỀN TẢNG LẬP KẾ HOẠCH DU LỊCH CÁ NHÂN HÓA ỨNG DỤNG AI
+# TRIPMATE — Nền Tảng Lập Kế Hoạch Du Lịch Cá Nhân Hóa Ứng Dụng AI
 
 > **Đồ án Capstone:** Nhóm phát triển TripMate — Khoa Công nghệ Thông tin  
-> **Phiên bản:** TripMate v1.0.0 (Node.js/Express + React Vite + Supabase)  
-> **Dự án mở:** Nền tảng chia sẻ và lập kế hoạch du lịch cho cộng đồng người dùng
+> **Phiên bản:** TripMate v1.0.0 (Node.js/Express + React Vite + Supabase PostgreSQL)
 
-TripMate là nền tảng hỗ trợ người dùng khám phá địa điểm, xem dự báo thời tiết, tối ưu hóa lộ trình bản đồ di chuyển bằng OpenStreetMap/OSRM, tự động lập lịch trình du lịch thông minh bằng Google Gemini AI, chia sẻ cẩm nang và trò chuyện nhóm du lịch theo thời gian thực.
-
----
-
-## 1. TECH STACK CHÍNH THỨC
-- **Backend:** Node.js (v20+ LTS) + Express.js + MySQL 8.x (XAMPP) + Prisma ORM + Socket.io.
-- **Frontend:** React 19/18 + Vite + TailwindCSS + Leaflet + Recharts + @dnd-kit.
-- **AI & Cloud Services:** Google Gemini AI API, OpenWeatherMap API, OSRM Public Routing Server.
-- **Múi giờ & Mã hóa:** `Asia/Ho_Chi_Minh` (UTC+7), `utf8mb4_unicode_ci` (tìm kiếm tiếng Việt không dấu).
+TripMate là nền tảng hỗ trợ người dùng khám phá địa điểm du lịch Việt Nam, theo dõi dự báo thời tiết theo từng ngày, tối ưu hóa lộ trình di chuyển trên bản đồ OpenStreetMap/OSRM, lập lịch trình du lịch cá nhân hóa bằng Google Gemini AI, chia sẻ cẩm nang cộng đồng và trò chuyện nhóm theo thời gian thực.
 
 ---
 
-## 2. YÊU CẦU MÔI TRƯỜNG & PHẦN MỀM CẦN CÓ
-1. **Hệ điều hành:** Windows 10/11 (chạy trên PowerShell hoặc Windows Terminal).
-2. **Node.js:** Phiên bản `>= 20.x` (khuyến nghị v20.x LTS hoặc v22.x LTS). Kiểm tra: `node -v` và `npm -v`.
-3. **Cơ sở dữ liệu:** **XAMPP Control Panel** (bật dịch vụ **MySQL** chạy cổng mặc định `3306`).
-4. **Git:** Đã cài đặt Git for Windows.
+## 1. Tính năng nổi bật
+
+- **Lập lịch trình thông minh bằng Gemini AI (`@google/genai`):**
+  - Hỗ trợ chọn **1 hoặc nhiều tỉnh/thành** trong danh sách **63 tỉnh/thành Việt Nam** (hoặc nhập thêm địa danh bất kỳ).
+  - Ưu tiên sử dụng bộ dữ liệu địa điểm đã duyệt trong CSDL cho các tỉnh có dữ liệu; tự động gợi ý địa danh thực tế cho các tỉnh chưa có địa điểm mẫu.
+  - **Thích ứng thời tiết thực tế:** Tự động lấy dự báo thời tiết từng tỉnh/ngày để ưu tiên điểm trong nhà khi mưa/dông và điểm ngoài trời khi nắng đẹp, kèm gợi ý chuẩn bị.
+  - **Thời gian di chuyển thực tế (OSRM):** Tính khoảng cách & thời gian di chuyển thực tế giữa các chặng (và chặng chuyển tỉnh), giữ khung giờ linh hoạt (2–6 chặng/ngày, không gò bó cố định 08:00–20:00).
+  - **Cá nhân hóa sâu:** Tùy chỉnh nhịp độ, phương tiện ưu tiên, đối tượng đồng hành, phong cách lưu trú, điểm xuất phát ngày 1, giờ đến ngày đầu và giờ về ngày cuối.
+  - **Quản lý ngân sách & chỉnh sửa nhanh:** Phân tách chi phí 4 nhóm (*Tham quan, Ăn uống, Di chuyển, Lưu trú*), nút **Tối ưu lại cho vừa ngân sách** (`POST /api/ai/optimize-budget`), **Tạo lại ngày này** (`POST /api/ai/regenerate-day`), và đổi thứ tự / xóa chặng trực tiếp trên bản nháp (`PUT /api/ai/draft/:id`) trước khi lưu chính thức.
+- **Bản đồ & Tối ưu lộ trình (Leaflet + OSRM):**
+  - Tự chọn điểm tham quan từ danh sách, tùy chọn điểm xuất phát và tối ưu thứ tự di chuyển bằng thuật toán TSP Nearest Neighbor + OSRM Driving Route.
+- **Dự báo thời tiết du lịch (Open-Meteo & OpenWeatherMap):**
+  - Tìm kiếm 58+ tỉnh/thành & điểm du lịch không dấu, xem chi tiết từng ngày và gợi ý trang phục/hoạt động đa dạng theo điều kiện thời tiết.
+- **Cẩm nang cộng đồng, Đánh giá, Chat nhóm Realtime & Trang Quản trị:**
+  - Chia sẻ/bình luận cẩm nang, yêu thích địa điểm, chat nhóm thời gian thực qua Socket.io, quản lý danh mục/địa điểm/người dùng/đánh giá cho Admin.
 
 ---
 
-## 3. HƯỚNG DẪN CÀI ĐẶT & KHỞI CHẠY (WINDOWS POWERSHELL)
+## 2. Tech Stack
 
-### Bước 1: Khởi động Cơ sở dữ liệu MySQL
-1. Mở phần mềm **XAMPP Control Panel**.
-2. Tại dòng **MySQL**, nhấn nút **Start** (đèn báo chuyển sang màu xanh lá cây, cổng `3306`).
-3. Mở trình duyệt truy cập `http://localhost/phpmyadmin/` và tạo sẵn một cơ sở dữ liệu mới có tên:
-   - Tên CSDL: `tripmate_db`
-   - Bảng mã (Collation): `utf8mb4_unicode_ci`
+- **Backend (`BE/`):** Node.js (`>= 20.x`, ESM), Express.js, Prisma ORM (`5.22.0`), PostgreSQL (**Supabase Cloud**), Supabase Storage (`@supabase/supabase-js`), Socket.io, Swagger UI.
+- **Frontend (`FE/`):** React 19, Vite 8, TailwindCSS v4, React Router v6, Leaflet / React-Leaflet, Recharts, `@dnd-kit`, Lucide Icons.
+- **AI & Dịch vụ bên ngoài:** Google Gemini API (`@google/genai` Interactions API + Structured Output), Open-Meteo API, OpenWeatherMap API, OSRM Routing API.
+- **Múi giờ & Tìm kiếm:** `Asia/Ho_Chi_Minh` (`UTC+7`), chuẩn hóa tìm kiếm tiếng Việt không dấu.
 
 ---
 
-### Bước 2: Cài đặt và Cấu hình Backend (`BE/`)
-Mở cửa sổ **PowerShell thứ nhất** và di chuyển vào thư mục Backend:
+## 3. Yêu cầu môi trường
+
+1. **Hệ điều hành:** Windows 10/11 (PowerShell hoặc Windows Terminal).
+2. **Node.js:** `>= 20.x` (khuyến nghị v20.x LTS hoặc v22.x LTS). Kiểm tra bằng `node -v` và `npm -v`.
+3. **Cơ sở dữ liệu:** Tài khoản & project **PostgreSQL trên Supabase Cloud** (đã cấu hình `DATABASE_URL` và `DIRECT_URL`).
+4. **API Keys:** `GEMINI_API_KEY` (Google AI Studio) và tùy chọn `OPENWEATHER_API_KEY` (OpenWeatherMap; nếu không có sẽ tự dùng Open-Meteo miễn phí).
+
+---
+
+## 4. Hướng dẫn cài đặt & khởi chạy (Windows PowerShell)
+
+### Bước 1: Cài đặt & Cấu hình Backend (`BE/`)
 ```powershell
 cd d:\AITranvel\LapKeHoachDuLichCaNhanHoa\BE
 
-# 1. Sao chép file cấu hình môi trường
+# 1. Sao chép file cấu hình môi trường và điền DATABASE_URL, DIRECT_URL, SUPABASE_*, GEMINI_API_KEY
 Copy-Item .env.example .env
 
-# 2. Cài đặt các gói phụ thuộc (Dependencies)
+# 2. Cài đặt dependencies
 npm install
 
-# 3. Tạo Schema và chạy Migration tạo 22 bảng MySQL
-npx prisma migrate dev --name init_tripmate_db
+# 3. Sinh Prisma Client và đồng bộ schema 22 bảng lên Supabase PostgreSQL
+npm run prisma:generate
+npm run prisma:push
 
-# 4. Chạy nạp dữ liệu mẫu (Seeder: Tỉnh thành, danh mục, địa điểm, tài khoản test)
+# 4. Nạp dữ liệu mẫu (63 tỉnh/thành Việt Nam, danh mục, địa điểm, tài khoản mẫu, cẩm nang)
 npm run seed
 
-# 5. Khởi động Backend Server ở chế độ phát triển
+# 5. Khởi động Backend Server
 npm run dev
 ```
-> Server Backend sẽ chạy tại: **`http://localhost:5001`**  
-> Trạng thái API Healthcheck: **`http://localhost:5001/api/health`**
+> - Backend API chạy tại: **`http://localhost:5001`** (hoặc theo `PORT` trong `BE/.env`)  
+> - Swagger API Docs: **`http://localhost:5001/api/docs`**  
+> - Healthcheck: **`http://localhost:5001/api/health`**
 
----
-
-### Bước 3: Cài đặt và Cấu hình Frontend (`FE/`)
-Mở cửa sổ **PowerShell thứ hai** và di chuyển vào thư mục Frontend:
+### Bước 2: Cài đặt & Cấu hình Frontend (`FE/`)
+Mở cửa sổ PowerShell thứ hai:
 ```powershell
 cd d:\AITranvel\LapKeHoachDuLichCaNhanHoa\FE
 
-# 1. Sao chép file cấu hình môi trường
+# 1. Sao chép file cấu hình môi trường (chỉnh VITE_API_URL / VITE_SOCKET_URL khớp cổng BE, VD: http://localhost:5001)
 Copy-Item .env.example .env
 
-# 2. Cài đặt các gói phụ thuộc (Dependencies)
+# 2. Cài đặt dependencies
 npm install
 
 # 3. Khởi động Frontend Dev Server (Vite)
 npm run dev
 ```
-> Giao diện người dùng sẽ chạy tại: **`http://localhost:3000`** (Cổng riêng độc quyền của TripMate, hoàn toàn không bị xung đột với các dự án khác)
+> - Giao diện người dùng chạy tại: **`http://localhost:3000`**  
+> - Build production kiểm tra lỗi: `npm run build`
 
 ---
 
-## 4. TÀI KHOẢN MẪU DÙNG ĐỂ KIỂM THỬ (TEST ACCOUNTS)
+## 5. Tài khoản mẫu dùng để kiểm thử
 
-Sau khi chạy lệnh `npm run seed`, hệ thống đã chuẩn bị sẵn các tài khoản sau:
+Sau khi chạy `npm run seed` trong `BE/`, hệ thống có sẵn các tài khoản sau:
 
-| Loại tài khoản | Tên đăng nhập | Email | Mật khẩu | Quyền hạn & Mục đích test |
+| Loại tài khoản | Tên đăng nhập | Email | Mật khẩu | Mục đích kiểm thử |
 | :--- | :--- | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | `admin` | `admin@tripmate.vn` | `Admin@123` | Toàn quyền Quản trị: Địa điểm, Danh mục, Tài khoản, Cẩm nang, Đánh giá, Thống kê (`UI_26–UI_39`). |
-| **Khách hàng 1 (Customer)** | `customer` | `customer@tripmate.vn` | `Customer@123` | Khách hàng: Lập lịch AI, tạo lịch trình thủ công, thả tim, đánh giá, chat nhóm (`UI_08–UI_25`). |
-| **Khách hàng 2 (Customer)** | `thuyan` | `thuyan@example.com` | `Customer@123` | Dùng để kiểm thử chat nhóm 2 người (`PB12`) và tương tác cẩm nang (`PB11`). |
-| **Tài khoản bị khóa** | `spammer_user`| `spam@example.com` | `Customer@123` | Kiểm thử nghiệp vụ chặn đăng nhập có thông báo lý do (`PB02, PB16`). |
+| **Quản trị viên (Admin)** | `admin` | `admin@tripmate.vn` | `Admin@123` | Quản trị địa điểm, danh mục, tài khoản, cẩm nang, đánh giá, thống kê. |
+| **Khách hàng 1** | `customer` | `customer@tripmate.vn` | `Customer@123` | Lập lịch AI, tạo lịch trình thủ công, yêu thích, đánh giá, chat nhóm. |
+| **Khách hàng 2** | `thuyan` | `thuyan@example.com` | `Customer@123` | Kiểm thử chat nhóm 2 người & tương tác cẩm nang. |
+| **Tài khoản bị khóa** | `spammer_user` | `spam@example.com` | `Customer@123` | Kiểm thử chặn đăng nhập và hiển thị lý do khóa. |
 
 ---
 
-## 5. CẤU TRÚC THƯ MỤC DỰ ÁN
+## 6. Kiểm thử nhanh Backend
 
-```text
-LapKeHoachDuLichCaNhanHoa/
-├── .agent/rules/project-rules.md   # Bộ quy tắc dự án cho AI Agent
-├── AGENTS.md                       # Nguyên tắc bất khả xâm phạm & Tech Stack
-├── CHANGELOG.md                    # Lịch sử phiên bản theo Keep a Changelog
-├── CONTRIBUTING.md                 # Quy trình làm việc nhóm & Commit chuẩn
-├── README.md                       # Tài liệu hướng dẫn setup này
-├── TIEN_DO_DU_AN.md                # Bảng theo dõi tiến độ chi tiết (đánh dấu [x] khi hoàn thành)
-├── docs/                           # Tài liệu kỹ thuật chi tiết
-│   ├── API_CONTRACT.md             # Đặc tả REST API & Socket.io cho 20 PB
-│   ├── DECISION_LOG.md             # Bản ghi quyết định kiến trúc (ADR)
-│   ├── MIGRATION_PLAN.md           # Kế hoạch tái sử dụng từ AI-TripPlanner
-│   ├── PROJECT_PLAN.md             # Kế hoạch 3 Sprint & Phân công nhiệm vụ
-│   ├── TASK_BOARD.md               # Bảng theo dõi tiến độ chức năng
-│   └── UI_DESIGN_SYSTEM.md         # Quy chuẩn màu sắc & ánh xạ 39 màn hình UI
-├── BE/                             # Backend Node.js / Express
-│   ├── .env.example                # Mẫu biến môi trường BE
-│   ├── prisma/                     # Schema 22 bảng & Prisma Migration
-│   ├── uploads/                    # Thư mục chứa ảnh avatar, địa điểm
-│   └── src/                        # Mã nguồn: config, controllers, models, routes, services, sockets
-└── FE/                             # Frontend React Vite + TailwindCSS
-    ├── .env.example                # Mẫu biến môi trường FE
-    └── src/                        # Mã nguồn: components, context, pages, services, layouts
+Trong thư mục `BE/` (khi server đang chạy tại cổng `5001`):
+```powershell
+cd d:\AITranvel\LapKeHoachDuLichCaNhanHoa\BE
+
+# Kiểm thử luồng lập lịch AI (PB08: tạo nháp, tạo lại ngày, lưu lịch trình & snapshot)
+node tests/test_pb08.js
 ```
 
 ---
 
-## 6. DANH MỤC TÀI LIỆU THAM KHẢO GỐC (TRONG THƯ MỤC `doc/`)
-1. `Nhom1_4.Product-Backlog.docx`: Quy tắc nghiệp vụ và tiêu chí chấp nhận cho 20 mục `PB01–PB20`.
-2. `Nhom1_5.ProjectUserInterface.docx`: Đặc tả chi tiết 39 màn hình giao diện người dùng `UI_01–UI_39`.
-3. `Nhom1_6.ProjectDatabase.docx`: Thiết kế chi tiết cấu trúc 22 bảng cơ sở dữ liệu quan hệ.
-4. `Nhom1_1.ProjectProposal.docx` & `Nhom1_2.ProjectPlan.docx`: Hồ sơ đề xuất dự án và kế hoạch thực hiện.
+## 7. Cấu trúc thư mục dự án
+
+```text
+LapKeHoachDuLichCaNhanHoa/
+├── README.md                       # Tài liệu hướng dẫn cài đặt & tổng quan dự án
+├── docs/                           # Tài liệu thiết kế, API contract & quy chuẩn UI
+├── BE/                             # Backend Node.js / Express + Prisma + Socket.io
+│   ├── .env.example                # Mẫu biến môi trường BE
+│   ├── prisma/
+│   │   ├── schema.prisma           # Schema 22 bảng PostgreSQL (Supabase)
+│   │   └── seed.js                 # Seeder 63 tỉnh/thành, địa điểm, tài khoản & dữ liệu mẫu
+│   ├── tests/                      # Bộ script kiểm thử API theo từng nghiệp vụ (PB01–PB20)
+│   └── src/
+│       ├── config/                 # Kết nối Prisma, Supabase Storage, Swagger
+│       ├── controllers/            # Xử lý nghiệp vụ REST API (aiController, destinationController, ...)
+│       ├── middleware/             # Xác thực JWT, phân quyền, upload, cache
+│       ├── routes/                 # Định tuyến API (/api/ai, /api/destinations, /api/weather, ...)
+│       ├── services/               # aiService (Gemini), mapService (OSRM), weatherService
+│       └── sockets/                # Socket.io chat nhóm & thông báo realtime
+└── FE/                             # Frontend React 19 + Vite + TailwindCSS v4
+    ├── .env.example                # Mẫu biến môi trường FE
+    └── src/
+        ├── components/             # UI dùng chung (SearchSuggestions, Navbar, ...)
+        ├── context/                # AuthContext, ToastContext
+        ├── layouts/                # GuestLayout, AdminLayout
+        ├── pages/                  # Các trang chức năng (TripPlannerPage, MapRoutePage, WeatherPage, ...)
+        ├── services/               # Gọi REST API (aiService, destinationService, ...)
+        └── utils/                  # Chuẩn hóa tiếng Việt, danh sách địa danh, helper
+```
