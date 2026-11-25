@@ -5,7 +5,8 @@ import {
   Marker, 
   Popup, 
   Polyline, 
-  useMap 
+  useMap,
+  useMapEvents
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -43,6 +44,8 @@ import {
 } from 'lucide-react';
 import mapService from '../services/mapService';
 import destinationService from '../services/destinationService';
+import SearchSuggestions from '../components/SearchSuggestions';
+import { normalizeVietnamese } from '../utils/vietnamese';
 
 // Fix icon mặc định của Leaflet trong môi trường Vite/Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -61,6 +64,18 @@ function MapAutoBounds({ coordinates }) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }
   }, [coordinates, map]);
+  return null;
+}
+
+// Component cho phép click trực tiếp lên bản đồ để đặt điểm xuất phát
+function MapStartPicker({ active, onPick }) {
+  useMapEvents({
+    click(e) {
+      if (active) {
+        onPick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
   return null;
 }
 
@@ -175,6 +190,9 @@ export default function MapRoutePage() {
   const [returnToStart, setReturnToStart] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [modalMode, setModalMode] = useState('stop'); // 'stop' | 'start'
+  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
+  const [pickingStartOnMap, setPickingStartOnMap] = useState(false);
   const [routeResult, setRouteResult] = useState(null);
   const [showLegs, setShowLegs] = useState(true);
 
@@ -193,10 +211,6 @@ export default function MapRoutePage() {
         const res = await destinationService.getDestinations({ limit: 20 });
         if (res.success && res.data) {
           setAvailableDestinations(res.data);
-          // Mặc định chọn trước 3 địa điểm nổi tiếng
-          if (stops.length === 0 && res.data.length >= 3) {
-            setStops(res.data.slice(0, 3));
-          }
         }
       } catch (err) {
         console.error('Lỗi nạp địa điểm:', err);
@@ -209,6 +223,8 @@ export default function MapRoutePage() {
   useEffect(() => {
     if (stops.length >= 1) {
       handleCalculateRoute();
+    } else {
+      setRouteResult(null);
     }
   }, [stops, returnToStart, startPoint]);
 
@@ -292,7 +308,7 @@ export default function MapRoutePage() {
 
   // Chuẩn bị danh sách tọa độ Polyline cho Leaflet
   const polylinePositions = useMemo(() => {
-    if (!routeResult) return [];
+    if (!routeResult || stops.length === 0) return [];
     // Nếu có geometry GeoJSON từ OSRM (lưu ý GeoJSON là [lon, lat], Leaflet cần [lat, lon])
     if (routeResult.geometry && routeResult.geometry.coordinates) {
       return routeResult.geometry.coordinates.map((coord) => [coord[1], coord[0]]);
@@ -302,7 +318,7 @@ export default function MapRoutePage() {
       return routeResult.lo_trinh.map((p) => [Number(p.vi_do), Number(p.kinh_do)]);
     }
     return [];
-  }, [routeResult]);
+  }, [routeResult, stops.length]);
 
   // Tất cả các điểm để căn chỉnh bounds
   const allMapPoints = useMemo(() => {
@@ -355,41 +371,89 @@ export default function MapRoutePage() {
             
             {/* 1. Điểm xuất phát (Khách sạn/Nhà ga/Sân bay) */}
             <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase tracking-wide">
                   <MapPin className="w-4 h-4 text-amber-600" />
-                  <span>Điểm xuất phát (Ngày 1)</span>
+                  <span>Điểm xuất phát</span>
                 </div>
-                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                  Khởi hành
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalMode('start');
+                      setShowAddModal(true);
+                    }}
+                    className="text-[11px] font-bold text-teal-700 bg-white border border-teal-200 hover:bg-teal-50 px-2 py-0.5 rounded-lg transition cursor-pointer"
+                  >
+                    Chọn điểm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPickingStartOnMap((prev) => !prev)}
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer ${
+                      pickingStartOnMap
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-white text-amber-800 border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    {pickingStartOnMap ? 'Đang chọn...' : 'Chọn trên bản đồ'}
+                  </button>
+                </div>
               </div>
 
-              <div>
+              {pickingStartOnMap && (
+                <p className="text-[11px] font-medium text-amber-800 bg-amber-100/80 px-2.5 py-1.5 rounded-lg">
+                  Bấm vào một vị trí bất kỳ trên bản đồ bên phải để đặt điểm xuất phát.
+                </p>
+              )}
+
+              <div className="relative">
                 <input
                   type="text"
                   value={startPoint.ten_dia_diem}
-                  onChange={(e) => setStartPoint({ ...startPoint, ten_dia_diem: e.target.value })}
+                  onFocus={() => setShowStartSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowStartSuggestions(false), 150)}
+                  onChange={(e) => {
+                    setStartPoint({ ...startPoint, ten_dia_diem: e.target.value });
+                    setShowStartSuggestions(true);
+                  }}
                   placeholder="Nhập điểm xuất phát..."
                   className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
                 />
-              </div>
-
-              {/* Presets gợi ý nhanh */}
-              <div className="space-y-1">
-                <p className="text-[11px] font-medium text-slate-500">Gợi ý địa điểm khởi hành nhanh:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {startPresets.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setStartPoint({ ...preset, id: 'start_point' })}
-                      className="px-2 py-1 rounded-lg bg-white border border-amber-200 hover:border-amber-400 text-[11px] text-amber-900 font-medium transition cursor-pointer"
-                    >
-                      {preset.ten_dia_diem}
-                    </button>
-                  ))}
-                </div>
+                <SearchSuggestions
+                  items={
+                    startPoint.ten_dia_diem.trim()
+                      ? [
+                          ...startPresets.map((p) => ({ ...p, id: `preset-${p.ten_dia_diem}` })),
+                          ...availableDestinations,
+                        ]
+                          .filter((item) =>
+                            normalizeVietnamese(item.ten_dia_diem).includes(
+                              normalizeVietnamese(startPoint.ten_dia_diem)
+                            )
+                          )
+                          .slice(0, 5)
+                          .map((item) => ({
+                            id: item.id,
+                            label: item.ten_dia_diem,
+                            type: 'destination',
+                            raw: item,
+                          }))
+                      : []
+                  }
+                  visible={showStartSuggestions}
+                  onSelect={(item) => {
+                    const p = item.raw;
+                    setStartPoint({
+                      id: 'start_point',
+                      ten_dia_diem: p.ten_dia_diem,
+                      dia_chi: p.dia_chi || '',
+                      vi_do: Number(p.vi_do),
+                      kinh_do: Number(p.kinh_do),
+                    });
+                    setShowStartSuggestions(false);
+                  }}
+                />
               </div>
             </div>
 
@@ -405,7 +469,10 @@ export default function MapRoutePage() {
 
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => {
+                    setModalMode('stop');
+                    setShowAddModal(true);
+                  }}
                   disabled={stops.length >= 10}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-xs font-bold transition disabled:opacity-40 cursor-pointer"
                 >
@@ -541,6 +608,19 @@ export default function MapRoutePage() {
 
             {/* Tự động fit bounds khi lộ trình thay đổi */}
             <MapAutoBounds coordinates={allMapPoints} />
+            <MapStartPicker
+              active={pickingStartOnMap}
+              onPick={(lat, lng) => {
+                setStartPoint({
+                  id: 'start_point',
+                  ten_dia_diem: `Điểm đã chọn (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                  dia_chi: `Tọa độ ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                  vi_do: lat,
+                  kinh_do: lng,
+                });
+                setPickingStartOnMap(false);
+              }}
+            />
 
             {/* Đường lộ trình Polyline */}
             {polylinePositions.length > 1 && (
@@ -570,7 +650,9 @@ export default function MapRoutePage() {
             </Marker>
 
             {/* Markers các điểm tham quan */}
-            {stops.map((stop, idx) => (
+            {stops
+              .filter((stop) => stop.vi_do != null && stop.kinh_do != null)
+              .map((stop, idx) => (
               <Marker
                 key={stop.id.toString()}
                 position={[Number(stop.vi_do), Number(stop.kinh_do)]}
@@ -607,8 +689,16 @@ export default function MapRoutePage() {
           <div className="bg-white rounded-3xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl border border-slate-100">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Chọn địa điểm thêm vào hành trình</h3>
-                <p className="text-xs text-slate-500">Danh sách các điểm đến có tọa độ chuẩn tại Đà Nẵng</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  {modalMode === 'start'
+                    ? 'Chọn điểm xuất phát'
+                    : 'Chọn địa điểm thêm vào hành trình'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {modalMode === 'start'
+                    ? 'Chọn một địa điểm có sẵn làm điểm khởi hành'
+                    : 'Danh sách các điểm đến có tọa độ chuẩn'}
+                </p>
               </div>
               <button
                 type="button"
@@ -621,7 +711,9 @@ export default function MapRoutePage() {
 
             <div className="p-4 overflow-y-auto space-y-2 flex-1">
               {availableDestinations.map((dest) => {
-                const isSelected = stops.some((s) => s.id.toString() === dest.id.toString());
+                const isSelected =
+                  modalMode === 'stop' &&
+                  stops.some((s) => s.id.toString() === dest.id.toString());
                 return (
                   <div
                     key={dest.id}
@@ -645,7 +737,20 @@ export default function MapRoutePage() {
                     <button
                       type="button"
                       disabled={isSelected}
-                      onClick={() => handleAddStop(dest)}
+                      onClick={() => {
+                        if (modalMode === 'start') {
+                          setStartPoint({
+                            id: 'start_point',
+                            ten_dia_diem: dest.ten_dia_diem,
+                            dia_chi: dest.dia_chi || dest.tinh_thanh?.ten_tinh_thanh || '',
+                            vi_do: Number(dest.vi_do),
+                            kinh_do: Number(dest.kinh_do),
+                          });
+                          setShowAddModal(false);
+                        } else {
+                          handleAddStop(dest);
+                        }
+                      }}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
                         isSelected
                           ? 'bg-slate-100 text-slate-400 cursor-not-allowed'

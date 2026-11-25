@@ -4,6 +4,8 @@ dotenv.config();
 
 const OSRM_BASE_URL = process.env.OSRM_BASE_URL || 'https://router.project-osrm.org';
 const MAPS_USER_AGENT = process.env.MAPS_USER_AGENT || 'TripMate/1.0 (Educational Capstone Project)';
+const osrmCache = new Map();
+const OSRM_CACHE_TTL_MS = 30 * 60 * 1000;
 
 /**
  * Tính khoảng cách đường chim bay giữa 2 tọa độ (Haversine Formula - km)
@@ -74,23 +76,35 @@ export const fetchOsrmRoute = async (coordinates) => {
 
     // Format OSRM: {lon1},{lat1};{lon2},{lat2};...
     const coordsString = coordinates
-      .map(c => `${Number(c.kinh_do)},${Number(c.vi_do)}`)
+      .map((c) => `${Number(c.kinh_do).toFixed(4)},${Number(c.vi_do).toFixed(4)}`)
       .join(';');
+
+    const cached = osrmCache.get(coordsString);
+    if (cached && Date.now() - cached.timestamp < OSRM_CACHE_TTL_MS) {
+      return cached.data;
+    }
 
     const url = `${OSRM_BASE_URL}/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
 
     const response = await axios.get(url, {
       headers: { 'User-Agent': MAPS_USER_AGENT },
-      timeout: 10000,
+      timeout: 5000,
     });
 
     if (response.data && response.data.routes && response.data.routes.length > 0) {
       const primaryRoute = response.data.routes[0];
-      return {
+      const legs = (primaryRoute.legs || []).map((leg) => ({
+        distanceKm: Math.round((leg.distance / 1000) * 10) / 10,
+        durationMin: Math.max(1, Math.round(leg.duration / 60)),
+      }));
+      const result = {
         totalDistanceKm: Math.round((primaryRoute.distance / 1000) * 10) / 10,
         totalDurationMin: Math.round(primaryRoute.duration / 60),
+        legs,
         geometry: primaryRoute.geometry, // GeoJSON Coordinates [ [lon, lat], ... ]
       };
+      osrmCache.set(coordsString, { data: result, timestamp: Date.now() });
+      return result;
     }
 
     // Fallback: tính xấp xỉ bằng Haversine nếu OSRM không có route
@@ -103,17 +117,26 @@ export const fetchOsrmRoute = async (coordinates) => {
 
 const calculateFallbackRoute = (coordinates) => {
   let totalKm = 0;
+  let totalMin = 0;
+  const legs = [];
   for (let i = 0; i < coordinates.length - 1; i++) {
-    totalKm += calculateHaversineDistance(
+    const distKm = calculateHaversineDistance(
       Number(coordinates[i].vi_do),
       Number(coordinates[i].kinh_do),
       Number(coordinates[i + 1].vi_do),
       Number(coordinates[i + 1].kinh_do)
     );
+    const roadKm = Math.round(distKm * 1.25 * 10) / 10; // Hệ số đường bộ thực tế
+    const speedKmh = roadKm > 40 ? 50 : 30;
+    const durationMin = Math.max(5, Math.round((roadKm / speedKmh) * 60));
+    totalKm += roadKm;
+    totalMin += durationMin;
+    legs.push({ distanceKm: roadKm, durationMin });
   }
   return {
     totalDistanceKm: Math.round(totalKm * 10) / 10,
-    totalDurationMin: Math.round(totalKm * 2), // Ước tính 30km/h
+    totalDurationMin: totalMin,
+    legs,
     geometry: null,
   };
 };

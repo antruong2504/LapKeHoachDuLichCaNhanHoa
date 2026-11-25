@@ -3,9 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { destinationService } from '../services/destinationService';
 import { aiService } from '../services/aiService';
+import SearchSuggestions from '../components/SearchSuggestions';
+import { normalizeVietnamese, VIETNAM_WEATHER_LOCATIONS } from '../utils/vietnamese';
 import {
   Sparkles,
   MapPin,
+  Search,
+  X,
   Calendar,
   DollarSign,
   Users,
@@ -24,7 +28,14 @@ import {
   Sunset,
   Moon,
   ExternalLink,
-  Layers
+  Layers,
+  CloudSun,
+  Car,
+  Lightbulb,
+  Route,
+  Trash2,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 const POPULAR_INTERESTS = [
@@ -32,10 +43,20 @@ const POPULAR_INTERESTS = [
   'Ẩm thực & Streetfood đặc sản',
   'Biển đảo & Nghỉ dưỡng',
   'Thiên nhiên & Trekking',
+  'Cà phê & Không gian chill',
   'Chụp ảnh check-in sống ảo',
   'Chợ đêm & Giải trí',
+  'Tâm linh & Chùa chiền',
+  'Làng nghề & Trải nghiệm bản địa',
+  'Nghệ thuật & Bảo tàng',
+  'Mua sắm đặc sản & Quà tặng',
   'Du lịch tiết kiệm, trải nghiệm',
 ];
+
+const PACE_OPTIONS = ['Thư giãn, thong thả', 'Cân bằng, hợp lý', 'Khám phá dày đặc'];
+const TRANSPORT_OPTIONS = ['Linh hoạt', 'Xe máy tự lái', 'Ô tô / Taxi / Grab', 'Xe khách / Tàu hỏa', 'Đi bộ & Xe công cộng'];
+const COMPANION_OPTIONS = ['Đi một mình (Solo)', 'Cặp đôi', 'Nhóm bạn trẻ', 'Gia đình có trẻ nhỏ', 'Gia đình có người lớn tuổi'];
+const STAY_OPTIONS = ['Linh hoạt', 'Khách sạn trung tâm', 'Homestay / Villa', 'Resort nghỉ dưỡng', 'Tiết kiệm / Hostel'];
 
 export default function TripPlannerPage() {
   const navigate = useNavigate();
@@ -44,16 +65,26 @@ export default function TripPlannerPage() {
   // Danh sách tỉnh thành
   const [provinces, setProvinces] = useState([]);
   const [loadingProvinces, setLoadingProvinces] = useState(true);
+  const [customProvinces, setCustomProvinces] = useState([]);
+  const [provinceInput, setProvinceInput] = useState('');
+  const [showProvinceSuggestions, setShowProvinceSuggestions] = useState(false);
 
-  // Form 6 thông tin bắt buộc (UI_17)
+  // Form 6 thông tin bắt buộc - hỗ trợ chọn 1 hoặc nhiều tỉnh/thành (cả ngoài danh sách)
   const [formData, setFormData] = useState({
-    tinh_thanh_id: '',
+    tinh_thanh_ids: [],
     ngay_bat_dau: '',
     ngay_ket_thuc: '',
     ngan_sach_du_kien: 5000000,
     so_luong_nguoi: 2,
     so_thich_tags: ['Văn hóa & Di tích lịch sử', 'Ẩm thực & Streetfood đặc sản'],
     ghi_chu_so_thich: '',
+    nhip_do: 'Cân bằng, hợp lý',
+    phuong_tien: 'Linh hoạt',
+    doi_tuong: '',
+    luu_tru: 'Linh hoạt',
+    diem_xuat_phat: '',
+    gio_den_ngay_dau: '',
+    gio_ve_ngay_cuoi: '',
   });
 
   // State trạng thái AI
@@ -66,8 +97,9 @@ export default function TripPlannerPage() {
   const [itineraryResult, setItineraryResult] = useState(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
 
-  // State khi tạo lại 1 ngày & lưu
+  // State khi tạo lại 1 ngày, tối ưu ngân sách & lưu
   const [isRegeneratingDay, setIsRegeneratingDay] = useState(false);
+  const [isOptimizingBudget, setIsOptimizingBudget] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessTripId, setSaveSuccessTripId] = useState(null);
 
@@ -83,7 +115,7 @@ export default function TripPlannerPage() {
           const daNang = data.find((p) => p.ten_tinh_thanh.includes('Đà Nẵng'));
           setFormData((prev) => ({
             ...prev,
-            tinh_thanh_id: daNang ? daNang.id.toString() : data[0].id.toString(),
+            tinh_thanh_ids: [daNang ? daNang.id.toString() : data[0].id.toString()],
           }));
         }
       } catch (err) {
@@ -144,6 +176,14 @@ export default function TripPlannerPage() {
     e.preventDefault();
     setErrorMessage('');
 
+    if (
+      (!formData.tinh_thanh_ids || formData.tinh_thanh_ids.length === 0) &&
+      customProvinces.length === 0
+    ) {
+      setErrorMessage('Vui lòng chọn hoặc nhập ít nhất 1 tỉnh / thành phố muốn đến.');
+      return;
+    }
+
     if (totalDays <= 0) {
       setErrorMessage('Ngày kết thúc phải diễn ra sau hoặc cùng ngày bắt đầu');
       return;
@@ -173,12 +213,21 @@ export default function TripPlannerPage() {
       ].filter(Boolean).join(', ');
 
       const payload = {
-        tinh_thanh_id: formData.tinh_thanh_id,
+        tinh_thanh_id: formData.tinh_thanh_ids[0] || undefined,
+        tinh_thanh_ids: formData.tinh_thanh_ids,
+        tinh_thanh_names: customProvinces,
         ngay_bat_dau: formData.ngay_bat_dau,
         ngay_ket_thuc: formData.ngay_ket_thuc,
         ngan_sach_du_kien: Number(formData.ngan_sach_du_kien),
         so_luong_nguoi: Number(formData.so_luong_nguoi),
         so_thich: so_thich || 'Khám phá văn hóa ẩm thực và chụp ảnh kỷ niệm',
+        nhip_do: formData.nhip_do,
+        phuong_tien: formData.phuong_tien,
+        doi_tuong: formData.doi_tuong,
+        luu_tru: formData.luu_tru,
+        diem_xuat_phat: formData.diem_xuat_phat.trim(),
+        gio_den_ngay_dau: formData.gio_den_ngay_dau,
+        gio_ve_ngay_cuoi: formData.gio_ve_ngay_cuoi,
       };
 
       const res = await aiService.generateItinerary(payload);
@@ -212,7 +261,12 @@ export default function TripPlannerPage() {
           const updatedDays = prev.cac_ngay.map((d) =>
             d.thu_tu_ngay === thu_tu_ngay ? res.data.ngay_moi : d
           );
-          return { ...prev, cac_ngay: updatedDays };
+          return {
+            ...prev,
+            cac_ngay: updatedDays,
+            tong_quang_duong_km:
+              res.data.tong_quang_duong_km ?? prev.tong_quang_duong_km,
+          };
         });
       }
     } catch (err) {
@@ -220,6 +274,75 @@ export default function TripPlannerPage() {
     } finally {
       setIsRegeneratingDay(false);
     }
+  };
+
+  // Tối ưu lại lịch trình cho vừa ngân sách
+  const handleOptimizeBudget = async () => {
+    if (!draftId) return;
+    setIsOptimizingBudget(true);
+    try {
+      const res = await aiService.optimizeBudget(draftId);
+      if (res.success && res.data?.noi_dung_lich_trinh) {
+        setItineraryResult(res.data.noi_dung_lich_trinh);
+        setActiveDayIndex(0);
+      }
+    } catch (err) {
+      alert(err.message || 'Không thể tối ưu ngân sách lúc này');
+    } finally {
+      setIsOptimizingBudget(false);
+    }
+  };
+
+  // Cập nhật nhanh thứ tự / xóa 1 chặng trong ngày trước khi lưu
+  const syncUpdatedDayStops = async (thu_tu_ngay, nextChangs) => {
+    if (!draftId) return;
+    // Cập nhật ngay trên UI trước
+    setItineraryResult((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        cac_ngay: prev.cac_ngay.map((d) =>
+          d.thu_tu_ngay === thu_tu_ngay ? { ...d, cac_chang: nextChangs } : d
+        ),
+      };
+    });
+    try {
+      const res = await aiService.updateDraftDay(draftId, thu_tu_ngay, nextChangs);
+      if (res.success && res.data?.ngay_moi) {
+        setItineraryResult((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            cac_ngay: prev.cac_ngay.map((d) =>
+              d.thu_tu_ngay === thu_tu_ngay ? res.data.ngay_moi : d
+            ),
+            tong_quang_duong_km: res.data.tong_quang_duong_km ?? prev.tong_quang_duong_km,
+            tong_chi_phi_uoc_tinh: res.data.tong_chi_phi_uoc_tinh ?? prev.tong_chi_phi_uoc_tinh,
+            vuot_ngan_sach: res.data.vuot_ngan_sach ?? prev.vuot_ngan_sach,
+            canh_bao: res.data.canh_bao,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('Sync draft day error:', err.message);
+    }
+  };
+
+  const handleMoveStop = (thu_tu_ngay, stopIdx, direction) => {
+    const dayObj = itineraryResult?.cac_ngay?.find((d) => d.thu_tu_ngay === thu_tu_ngay);
+    if (!dayObj?.cac_chang) return;
+    const targetIdx = stopIdx + direction;
+    if (targetIdx < 0 || targetIdx >= dayObj.cac_chang.length) return;
+    const next = [...dayObj.cac_chang];
+    [next[stopIdx], next[targetIdx]] = [next[targetIdx], next[stopIdx]];
+    syncUpdatedDayStops(thu_tu_ngay, next);
+  };
+
+  const handleDeleteStop = (thu_tu_ngay, stopIdx) => {
+    const dayObj = itineraryResult?.cac_ngay?.find((d) => d.thu_tu_ngay === thu_tu_ngay);
+    if (!dayObj?.cac_chang || dayObj.cac_chang.length <= 1) return;
+    const next = dayObj.cac_chang.filter((_, idx) => idx !== stopIdx);
+    syncUpdatedDayStops(thu_tu_ngay, next);
   };
 
   // Lưu bản nháp AI vào lịch trình chính thức
@@ -295,24 +418,191 @@ export default function TripPlannerPage() {
             )}
 
             <form onSubmit={handleGenerate} className="space-y-8">
-              {/* 1. Điểm đến & Tỉnh thành */}
+              {/* 1. Điểm đến & Tỉnh thành (hỗ trợ chọn nhiều tỉnh trong & ngoài danh sách) */}
               <div>
-                <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-teal-600" />
-                  1. Tỉnh / Thành phố bạn muốn đến du lịch <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.tinh_thanh_id}
-                  onChange={(e) => setFormData({ ...formData, tinh_thanh_id: e.target.value })}
-                  disabled={loadingProvinces}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
-                >
-                  {provinces.map((prov) => (
-                    <option key={prov.id} value={prov.id.toString()}>
-                      {prov.ten_tinh_thanh} ({prov.vung_mien || 'Việt Nam'})
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-teal-600" />
+                    1. Tỉnh / Thành phố muốn đến <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
+                    Đã chọn {formData.tinh_thanh_ids.length + customProvinces.length} tỉnh/thành
+                  </span>
+                </div>
+
+                {loadingProvinces ? (
+                  <div className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+                ) : (
+                  <div className="space-y-3">
+                    {/* Chỉ hiển thị các tỉnh/thành đã được chọn */}
+                    {(formData.tinh_thanh_ids.length > 0 || customProvinces.length > 0) && (
+                      <div className="flex flex-wrap gap-2">
+                        {formData.tinh_thanh_ids.map((provId) => {
+                          const prov = provinces.find((p) => p.id.toString() === provId);
+                          if (!prov) return null;
+                          return (
+                            <span
+                              key={provId}
+                              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border bg-teal-600 text-white border-teal-600 shadow-sm flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>{prov.ten_tinh_thanh}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    tinh_thanh_ids: prev.tinh_thanh_ids.filter((id) => id !== provId),
+                                  }))
+                                }
+                                className="ml-0.5 hover:bg-teal-700 rounded-full p-0.5 cursor-pointer"
+                                aria-label={`Bỏ ${prov.ten_tinh_thanh}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </span>
+                          );
+                        })}
+
+                        {customProvinces.map((name) => (
+                          <span
+                            key={`custom-${name}`}
+                            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border bg-teal-600 text-white border-teal-600 shadow-sm flex items-center gap-1.5"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>{name}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCustomProvinces((prev) => prev.filter((item) => item !== name))
+                              }
+                              className="ml-0.5 hover:bg-teal-700 rounded-full p-0.5 cursor-pointer"
+                              aria-label={`Bỏ ${name}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tìm kiếm & chọn tỉnh/thành từ CSDL (63 tỉnh thành) hoặc nhập địa điểm khác */}
+                    {(() => {
+                      const addProvinceSelection = (rawOrId) => {
+                        if (rawOrId && typeof rawOrId === 'object' && rawOrId.id) {
+                          const idStr = rawOrId.id.toString();
+                          setFormData((prev) => ({
+                            ...prev,
+                            tinh_thanh_ids: prev.tinh_thanh_ids.includes(idStr)
+                              ? prev.tinh_thanh_ids
+                              : [...prev.tinh_thanh_ids, idStr],
+                          }));
+                          setProvinceInput('');
+                          setShowProvinceSuggestions(false);
+                          return;
+                        }
+
+                        const clean = (
+                          typeof rawOrId === 'string' ? rawOrId : rawOrId?.label || ''
+                        ).trim();
+                        if (!clean) return;
+                        const normClean = normalizeVietnamese(clean);
+                        const existingDb = provinces.find(
+                          (p) =>
+                            normalizeVietnamese(p.ten_tinh_thanh) === normClean ||
+                            normalizeVietnamese(p.ten_tinh_thanh).includes(normClean)
+                        );
+                        if (existingDb && normalizeVietnamese(existingDb.ten_tinh_thanh) === normClean) {
+                          const idStr = existingDb.id.toString();
+                          setFormData((prev) => ({
+                            ...prev,
+                            tinh_thanh_ids: prev.tinh_thanh_ids.includes(idStr)
+                              ? prev.tinh_thanh_ids
+                              : [...prev.tinh_thanh_ids, idStr],
+                          }));
+                        } else if (
+                          !customProvinces.some((c) => normalizeVietnamese(c) === normClean)
+                        ) {
+                          setCustomProvinces((prev) => [...prev, clean]);
+                        }
+                        setProvinceInput('');
+                        setShowProvinceSuggestions(false);
+                      };
+
+                      const q = normalizeVietnamese(provinceInput);
+                      const selectedIds = new Set(formData.tinh_thanh_ids);
+                      const selectedCustomNorms = new Set(
+                        customProvinces.map((c) => normalizeVietnamese(c))
+                      );
+
+                      const dbMatches = provinces
+                        .filter((p) => {
+                          if (selectedIds.has(p.id.toString())) return false;
+                          const norm = normalizeVietnamese(p.ten_tinh_thanh);
+                          return !q || norm.includes(q);
+                        })
+                        .map((p) => ({ id: p.id.toString(), label: p.ten_tinh_thanh }));
+
+                      const dbNormSet = new Set(
+                        provinces.map((p) => normalizeVietnamese(p.ten_tinh_thanh))
+                      );
+                      const extraMatches = VIETNAM_WEATHER_LOCATIONS.filter((loc) => {
+                        const norm = normalizeVietnamese(loc);
+                        if (selectedCustomNorms.has(norm)) return false;
+                        if (provinces.some((p) => normalizeVietnamese(p.ten_tinh_thanh).includes(norm))) {
+                          return false;
+                        }
+                        if (dbNormSet.has(norm)) return false;
+                        return !q || norm.includes(q);
+                      }).map((loc) => ({ id: null, label: loc }));
+
+                      const suggestions = [...dbMatches, ...extraMatches].slice(0, 10);
+
+                      return (
+                        <div className="relative flex gap-2">
+                          <div className="relative flex-1">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={provinceInput}
+                              onFocus={() => setShowProvinceSuggestions(true)}
+                              onBlur={() => setTimeout(() => setShowProvinceSuggestions(false), 180)}
+                              onChange={(e) => {
+                                setProvinceInput(e.target.value);
+                                setShowProvinceSuggestions(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (suggestions.length > 0 && q) {
+                                    addProvinceSelection(suggestions[0]);
+                                  } else {
+                                    addProvinceSelection(provinceInput);
+                                  }
+                                }
+                              }}
+                              placeholder="Nhập tỉnh/thành muốn đến"
+                              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                            />
+                            <SearchSuggestions
+                              items={suggestions}
+                              visible={showProvinceSuggestions && suggestions.length > 0}
+                              onSelect={(item) => addProvinceSelection(item)}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addProvinceSelection(provinceInput)}
+                            disabled={!provinceInput.trim()}
+                            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-teal-50 hover:text-teal-700 border border-slate-200 disabled:opacity-50 transition cursor-pointer shrink-0"
+                          >
+                            + Thêm
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
 
               {/* 2 & 3. Ngày bắt đầu & Ngày kết thúc */}
@@ -463,9 +753,149 @@ export default function TripPlannerPage() {
                   rows="2"
                   value={formData.ghi_chu_so_thich}
                   onChange={(e) => setFormData({ ...formData, ghi_chu_so_thich: e.target.value })}
-                  placeholder="Ví dụ: thích quán cà phê yên tĩnh, đồ ăn địa phương, đi cùng trẻ nhỏ..."
+                  placeholder="Ví dụ: thích quán cà phê yên tĩnh, không ăn hải sản, tránh đi bộ đường dốc, ưu tiên điểm chụp ảnh sáng sớm..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
+              </div>
+
+              {/* 7. Tùy chỉnh cá nhân hóa nâng cao */}
+              <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-teal-600" />
+                    7. Tùy chỉnh phong cách chuyến đi (tùy chọn)
+                  </h3>
+                  <span className="text-xs text-slate-500">Giúp AI sắp xếp sát nhu cầu hơn</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Nhịp độ */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600 mb-2">Nhịp độ lịch trình</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PACE_OPTIONS.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, nhip_do: opt }))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                            formData.nhip_do === opt
+                              ? 'bg-teal-600 border-teal-600 text-white shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Phương tiện ưu tiên */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600 mb-2">Phương tiện ưu tiên</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TRANSPORT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, phuong_tien: opt }))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                            formData.phuong_tien === opt
+                              ? 'bg-teal-600 border-teal-600 text-white shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Đối tượng đồng hành */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600 mb-2">Đối tượng đồng hành</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {COMPANION_OPTIONS.map((opt) => {
+                        const active = formData.doi_tuong === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, doi_tuong: active ? '' : opt }))
+                            }
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                              active
+                                ? 'bg-teal-600 border-teal-600 text-white shadow-sm'
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Phong cách lưu trú */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600 mb-2">Phong cách lưu trú</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {STAY_OPTIONS.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, luu_tru: opt }))}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer ${
+                            formData.luu_tru === opt
+                              ? 'bg-teal-600 border-teal-600 text-white shadow-sm'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Điểm xuất phát & Giờ đến / Giờ về */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/70">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Điểm xuất phát (ngày 1)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.diem_xuat_phat}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, diem_xuat_phat: e.target.value }))}
+                      placeholder="VD: Sân bay Đà Nẵng, Ga Huế..."
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Giờ đến nơi (ngày đầu)
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.gio_den_ngay_dau}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, gio_den_ngay_dau: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      Giờ về dự kiến (ngày cuối)
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.gio_ve_ngay_cuoi}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, gio_ve_ngay_cuoi: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Submit CTA */}
@@ -551,8 +981,13 @@ export default function TripPlannerPage() {
                     <span>Lịch trình tối ưu hóa bởi Gemini AI</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                    {itineraryResult.ten_lich_trinh || `Lịch trình khám phá ${selectedProvince?.ten_tinh_thanh || ''}`}
+                    {itineraryResult.ten_lich_trinh || 'Lịch trình du lịch cá nhân hóa'}
                   </h2>
+                  {itineraryResult.tom_tat_chuyen_di && (
+                    <p className="text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
+                      {itineraryResult.tom_tat_chuyen_di}
+                    </p>
+                  )}
                 </div>
 
                 {/* Actions: Lưu lịch trình & Tạo lại */}
@@ -584,11 +1019,21 @@ export default function TripPlannerPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
                   <p className="text-xs text-slate-500 font-medium">Điểm đến</p>
-                  <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedProvince?.ten_tinh_thanh || 'Việt Nam'}</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">
+                    {[
+                      ...formData.tinh_thanh_ids
+                        .map((id) => provinces.find((p) => p.id.toString() === id)?.ten_tinh_thanh)
+                        .filter(Boolean),
+                      ...customProvinces,
+                    ].join(', ') || 'Việt Nam'}
+                  </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-medium">Thời gian</p>
-                  <p className="text-sm font-bold text-slate-900 mt-0.5">{itineraryResult.cac_ngay?.length || totalDays} ngày</p>
+                  <p className="text-xs text-slate-500 font-medium">Thời gian & Quãng đường</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">
+                    {itineraryResult.cac_ngay?.length || totalDays} ngày
+                    {itineraryResult.tong_quang_duong_km > 0 ? ` • ~${itineraryResult.tong_quang_duong_km} km` : ''}
+                  </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
                   <p className="text-xs text-slate-500 font-medium">Số người</p>
@@ -602,15 +1047,61 @@ export default function TripPlannerPage() {
                 </div>
               </div>
 
+              {itineraryResult.phan_bo_chi_phi && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  {[
+                    { label: 'Tham quan & Vé', value: itineraryResult.phan_bo_chi_phi.tham_quan },
+                    { label: 'Ăn uống', value: itineraryResult.phan_bo_chi_phi.an_uong },
+                    { label: 'Di chuyển', value: itineraryResult.phan_bo_chi_phi.di_chuyen },
+                    { label: 'Lưu trú', value: itineraryResult.phan_bo_chi_phi.luu_tru },
+                  ].map((item) => (
+                    <div key={item.label} className="px-3.5 py-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                      <p className="text-[11px] font-medium text-emerald-800">{item.label}</p>
+                      <p className="text-xs sm:text-sm font-bold text-emerald-900 mt-0.5">
+                        ~{Number(item.value || 0).toLocaleString('vi-VN')} đ
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {Array.isArray(itineraryResult.goi_y_chuan_bi) && itineraryResult.goi_y_chuan_bi.length > 0 && (
+                <div className="mt-5 p-4 rounded-2xl bg-teal-50/70 border border-teal-100">
+                  <p className="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-teal-600" />
+                    Gợi ý chuẩn bị theo thời tiết & hành trình
+                  </p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-700">
+                    {itineraryResult.goi_y_chuan_bi.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-teal-600 font-bold">•</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Cảnh báo vượt ngân sách nếu có (PB08 requirement) */}
               {itineraryResult.vuot_ngan_sach && (
-                <div className="mt-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Cảnh báo vượt ngân sách: </span>
-                    {itineraryResult.canh_bao ||
-                      `Chi phí dự kiến (${Number(itineraryResult.tong_chi_phi_uoc_tinh || 0).toLocaleString('vi-VN')} đ) đang cao hơn ngân sách dự kiến ban đầu.`}
+                <div className="mt-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">Cảnh báo vượt ngân sách: </span>
+                      {itineraryResult.canh_bao ||
+                        `Chi phí dự kiến (${Number(itineraryResult.tong_chi_phi_uoc_tinh || 0).toLocaleString('vi-VN')} đ) đang cao hơn ngân sách dự kiến ban đầu.`}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleOptimizeBudget}
+                    disabled={isOptimizingBudget}
+                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm disabled:opacity-50 transition shrink-0 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RotateCcw className={`w-3.5 h-3.5 ${isOptimizingBudget ? 'animate-spin' : ''}`} />
+                    <span>{isOptimizingBudget ? 'Đang tối ưu...' : 'Tối ưu lại cho vừa ngân sách'}</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -645,6 +1136,31 @@ export default function TripPlannerPage() {
                     <h3 className="text-xl font-bold text-slate-900 mt-0.5">
                       {itineraryResult.cac_ngay[activeDayIndex].tieu_de_ngay || `Khám phá các điểm đến hấp dẫn`}
                     </h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      {itineraryResult.cac_ngay[activeDayIndex].thoi_tiet && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
+                          <CloudSun className="w-3.5 h-3.5 text-amber-600" />
+                          <span>
+                            {itineraryResult.cac_ngay[activeDayIndex].thoi_tiet.nhiet_do}°C •{' '}
+                            {itineraryResult.cac_ngay[activeDayIndex].thoi_tiet.mo_ta} • Ẩm{' '}
+                            {itineraryResult.cac_ngay[activeDayIndex].thoi_tiet.do_am}%
+                          </span>
+                        </span>
+                      )}
+                      {itineraryResult.cac_ngay[activeDayIndex].tong_quang_duong_km > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs font-semibold">
+                          <Route className="w-3.5 h-3.5 text-sky-600" />
+                          <span>~{itineraryResult.cac_ngay[activeDayIndex].tong_quang_duong_km} km trong ngày</span>
+                        </span>
+                      )}
+                      {itineraryResult.cac_ngay[activeDayIndex].tong_chi_phi_ngay > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                          <span>
+                            Chi phí ngày: ~{Number(itineraryResult.cac_ngay[activeDayIndex].tong_chi_phi_ngay).toLocaleString('vi-VN')} đ
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Nút Tạo lại ngày này (PB08 requirement) */}
@@ -702,6 +1218,20 @@ export default function TripPlannerPage() {
                                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                                 <span>{chang.thoi_gian || 'Thời gian linh hoạt'}</span>
                               </span>
+                              {chang.thoi_gian_di_chuyen_phut > 0 && (
+                                <span className="text-xs font-medium text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md">
+                                  Di chuyển ~{chang.thoi_gian_di_chuyen_phut >= 60
+                                    ? `${Math.floor(chang.thoi_gian_di_chuyen_phut / 60)}g ${chang.thoi_gian_di_chuyen_phut % 60}p`
+                                    : `${chang.thoi_gian_di_chuyen_phut} phút`}
+                                  {chang.khoang_cach_km ? ` (${chang.khoang_cach_km} km)` : ''}
+                                </span>
+                              )}
+                              {chang.phuong_tien_di_chuyen && (
+                                <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  <Car className="w-3 h-3" />
+                                  <span>{chang.phuong_tien_di_chuyen}</span>
+                                </span>
+                              )}
                               {chang.chi_phi_uoc_tinh > 0 && (
                                 <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                                   ~{Number(chang.chi_phi_uoc_tinh).toLocaleString('vi-VN')} đ
@@ -709,9 +1239,63 @@ export default function TripPlannerPage() {
                               )}
                             </div>
 
-                            <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-1">
-                              {chang.ten_dia_diem}
-                            </h4>
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-1">
+                                {chang.ten_dia_diem}
+                              </h4>
+                              <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                                {chang.vi_do && chang.kinh_do && (
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${chang.vi_do},${chang.kinh_do}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-semibold text-teal-700 hover:text-teal-800 inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-teal-50"
+                                  >
+                                    <span>Bản đồ</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleMoveStop(itineraryResult.cac_ngay[activeDayIndex].thu_tu_ngay, cIdx, -1)
+                                  }
+                                  disabled={cIdx === 0 || saveSuccessTripId !== null}
+                                  title="Đưa lên trước"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-30 transition cursor-pointer"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleMoveStop(itineraryResult.cac_ngay[activeDayIndex].thu_tu_ngay, cIdx, 1)
+                                  }
+                                  disabled={
+                                    cIdx === (itineraryResult.cac_ngay[activeDayIndex].cac_chang?.length || 1) - 1 ||
+                                    saveSuccessTripId !== null
+                                  }
+                                  title="Đưa xuống sau"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-30 transition cursor-pointer"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteStop(itineraryResult.cac_ngay[activeDayIndex].thu_tu_ngay, cIdx)
+                                  }
+                                  disabled={
+                                    (itineraryResult.cac_ngay[activeDayIndex].cac_chang?.length || 0) <= 1 ||
+                                    saveSuccessTripId !== null
+                                  }
+                                  title="Xóa chặng này"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
 
                             {chang.dia_chi && (
                               <p className="text-xs text-slate-500 flex items-center gap-1 mb-2">
@@ -723,6 +1307,13 @@ export default function TripPlannerPage() {
                             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-slate-100">
                               {chang.hoat_dong || 'Tham quan, chụp ảnh và tận hưởng trải nghiệm địa phương.'}
                             </p>
+
+                            {chang.luu_y && (
+                              <p className="mt-2 text-xs text-amber-800 bg-amber-50/70 border border-amber-100 px-3 py-2 rounded-xl flex items-start gap-1.5">
+                                <Lightbulb className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                <span>{chang.luu_y}</span>
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

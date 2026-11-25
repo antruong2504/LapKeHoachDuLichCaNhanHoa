@@ -27,6 +27,7 @@ export default function WeatherPage() {
   const [cityInput, setCityInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [weatherData, setWeatherData] = useState(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -65,6 +66,7 @@ export default function WeatherPage() {
       const res = await weatherService.getWeather({ city });
       if (res.success && res.data) {
         setWeatherData(res.data);
+        setSelectedDayIndex(0);
       } else {
         setError('Không thể lấy thông tin dự báo thời tiết.');
       }
@@ -79,40 +81,110 @@ export default function WeatherPage() {
     fetchWeather(selectedCity);
   }, [selectedCity, fetchWeather]);
 
-  // Gợi ý trang phục & hoạt động AI dựa trên thời tiết
-  const getTravelAdvice = (temp, desc) => {
-    const text = (desc || '').toLowerCase();
-    if (text.includes('mưa') || text.includes('dông')) {
+  // Gợi ý trang phục & hoạt động dựa trên thời tiết thực tế (nhiệt độ, mô tả, gió, độ ẩm)
+  const getTravelAdvice = (current = {}) => {
+    const temp = Number(current.nhiet_do ?? 28);
+    const wind = Number(current.gio_kmh ?? 10);
+    const humidity = Number(current.do_am ?? 70);
+    const text = (current.mo_ta || '').toLowerCase();
+
+    if (text.includes('dông') || text.includes('bão')) {
       return {
-        badge: 'Cảnh báo mưa',
-        badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
-        advice: 'Nên mang theo ô (dù), áo mưa tiện lợi và giày chống trượt. Ưu tiên các hoạt động tham quan bảo tàng, quán cà phê hoặc trung tâm giải trí trong nhà.',
+        badge: 'Cảnh báo dông',
+        badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+        advice: 'Có khả năng kèm sấm sét và gió giật. Hạn chế đi biển, leo núi và ưu tiên các điểm tham quan trong nhà.',
+        tags: ['Áo khoác chống nước', 'Giày chống trượt', 'Tham quan trong nhà'],
       };
     }
-    if (temp >= 32) {
+
+    if (text.includes('mưa phùn') || text.includes('mưa nhẹ')) {
+      return {
+        badge: temp <= 18 ? 'Mưa phùn & Lạnh' : 'Mưa phùn nhẹ',
+        badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
+        advice: temp <= 18
+          ? 'Trời se lạnh kèm mưa phùn nhẹ, nên mặc áo khoác cản gió giữ ấm và mang theo ô gấp gọn.'
+          : 'Mưa lất phất nhẹ, mang ô gấp gọn hoặc áo khoác mỏng chống thấm để thoải mái dạo phố, thưởng thức ẩm thực.',
+        tags: [temp <= 18 ? 'Áo khoác giữ ấm' : 'Áo khoác mỏng', 'Ô gấp gọn', 'Dạo phố & Ẩm thực'],
+      };
+    }
+
+    if (text.includes('mưa')) {
+      return {
+        badge: 'Trời có mưa',
+        badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+        advice: 'Nên chuẩn bị áo mưa tiện lợi, ô (dù) và giày dép nhanh khô. Ưu tiên bảo tàng, quán cà phê hoặc trung tâm thương mại.',
+        tags: ['Áo mưa / Ô', 'Giày chống trượt', 'Bảo tàng & Cà phê'],
+      };
+    }
+
+    if (text.includes('sương mù')) {
+      return {
+        badge: 'Có sương mù',
+        badgeColor: 'bg-slate-200 text-slate-800 border-slate-300',
+        advice: 'Sương mù làm giảm tầm nhìn vào sáng sớm và chiều tối, nên mặc áo khoác nhẹ và cẩn trọng nếu di chuyển đường đèo.',
+        tags: ['Áo khoác dài tay', 'Giày thể thao', 'Săn mây / Ngắm cảnh'],
+      };
+    }
+
+    if (temp < 16) {
+      return {
+        badge: 'Trời rét',
+        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        advice: 'Nhiệt độ xuống thấp, hãy mặc nhiều lớp áo giữ nhiệt, mang khăn choàng và găng tay khi ra ngoài buổi tối.',
+        tags: ['Áo ấm nhiều lớp', 'Khăn choàng', 'Thưởng thức đồ nóng'],
+      };
+    }
+
+    if (temp <= 22) {
+      return {
+        badge: 'Se lạnh dễ chịu',
+        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        advice: 'Không khí mát mẻ, se lạnh về đêm — rất hợp diện áo len mỏng, cardigan hoặc hoodie nhẹ khi dạo phố.',
+        tags: ['Áo len mỏng / Cardigan', 'Giày đi bộ', 'Dạo phố & Check-in'],
+      };
+    }
+
+    if (temp >= 33) {
       return {
         badge: 'Nắng nóng',
         badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-        advice: 'Nhiệt độ khá cao, nên thoa kem chống nắng, đeo kính râm và chuẩn bị mũ rộng vành. Tránh các hoạt động trekking giữa trưa và nhớ uống nhiều nước.',
+        advice: 'Nắng gắt vào giữa trưa, ưu tiên quần áo cotton thoáng mát, thoa kem chống nắng, đội mũ rộng vành và uống đủ nước.',
+        tags: ['Trang phục thoáng mát', 'Kem chống nắng & Mũ', 'Bổ sung nước'],
       };
     }
-    if (temp <= 20) {
+
+    if (wind >= 25) {
       return {
-        badge: 'Se lạnh',
-        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        advice: 'Thời tiết se lạnh, thích hợp diện áo khoác mỏng hoặc khăn choàng nhẹ khi dạo phố đêm.',
+        badge: 'Gió mạnh',
+        badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+        advice: 'Gió thổi khá mạnh, nên mang áo khoác chắn gió và cân nhắc kỹ nếu tham gia các tour tàu thuyền hoặc cano.',
+        tags: ['Áo khoác chắn gió', 'Kính bảo vệ mắt', 'Hạn chế tour biển'],
       };
     }
+
+    if (text.includes('nhiều mây') || humidity >= 85) {
+      return {
+        badge: 'Nhiều mây, mát mẻ',
+        badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+        advice: 'Trời râm mát, ít nắng gắt — thuận lợi cho các hoạt động đi bộ tham quan di tích và khám phá ngoài trời cả ngày.',
+        tags: ['Trang phục thoải mái', 'Nước uống', 'Tham quan ngoài trời'],
+      };
+    }
+
     return {
       badge: 'Thời tiết lý tưởng',
       badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      advice: 'Thời tiết mát mẻ và khô ráo, cực kỳ thuận lợi cho việc chụp ảnh check-in, tắm biển và tham gia các tour du lịch ngoài trời.',
+      advice: 'Thời tiết nắng nhẹ và khô ráo, cực kỳ thuận lợi cho việc chụp ảnh, tắm biển và tham gia các hoạt động ngoài trời.',
+      tags: ['Trang phục năng động', 'Kính râm', 'Chụp ảnh & Tắm biển'],
     };
   };
 
-  const advice = weatherData?.hien_tai 
-    ? getTravelAdvice(weatherData.hien_tai.nhiet_do, weatherData.hien_tai.mo_ta)
-    : null;
+  const activeDay =
+    selectedDayIndex === 0
+      ? weatherData?.hien_tai
+      : weatherData?.du_bao_5_ngay?.[selectedDayIndex] || weatherData?.hien_tai;
+
+  const advice = activeDay ? getTravelAdvice(activeDay) : null;
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-20">
@@ -122,7 +194,7 @@ export default function WeatherPage() {
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/30 border border-teal-400/40 text-teal-200 text-xs font-semibold">
             <CloudSun className="w-4 h-4 text-amber-300" />
-            <span>Dự báo thời tiết du lịch 5 ngày</span>
+            <span>Dự báo thời tiết du lịch</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
@@ -240,22 +312,29 @@ export default function WeatherPage() {
                       <MapPin className="w-3.5 h-3.5 text-amber-300" />
                       <span>{weatherData.tinh_thanh}</span>
                     </span>
-                    <span className="text-xs text-teal-200">Hôm nay</span>
+                    <span className="text-xs text-teal-200">
+                      {selectedDayIndex === 0
+                        ? 'Hôm nay'
+                        : selectedDayIndex === 1
+                        ? 'Ngày mai'
+                        : `Ngày ${selectedDayIndex + 1}`}
+                      {activeDay?.ngay ? ` · ${activeDay.ngay}` : ''}
+                    </span>
                   </div>
 
                   <div className="flex items-baseline gap-4">
                     <span className="text-6xl sm:text-7xl font-black tracking-tight text-white">
-                      {weatherData.hien_tai?.nhiet_do || 28}°
+                      {activeDay?.nhiet_do ?? 28}°
                     </span>
                     <span className="text-xl sm:text-2xl font-bold text-amber-300 capitalize">
-                      {weatherData.hien_tai?.mo_ta || 'Trời nắng'}
+                      {activeDay?.mo_ta || 'Trời nắng'}
                     </span>
                   </div>
 
                   <p className="text-xs text-teal-100 flex items-center gap-3">
-                    <span>Thấp nhất: {weatherData.hien_tai?.nhiet_do_min || 25}°C</span>
+                    <span>Thấp nhất: {activeDay?.nhiet_do_min ?? activeDay?.nhiet_do ?? 25}°C</span>
                     <span>·</span>
-                    <span>Cao nhất: {weatherData.hien_tai?.nhiet_do_max || 32}°C</span>
+                    <span>Cao nhất: {activeDay?.nhiet_do_max ?? activeDay?.nhiet_do ?? 32}°C</span>
                   </p>
                 </div>
 
@@ -266,7 +345,7 @@ export default function WeatherPage() {
                       <Droplets className="w-4 h-4 text-cyan-300" />
                       <span>Độ ẩm</span>
                     </div>
-                    <p className="text-lg font-bold text-white">{weatherData.hien_tai?.do_am || 70}%</p>
+                    <p className="text-lg font-bold text-white">{activeDay?.do_am ?? 70}%</p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 space-y-1">
@@ -274,7 +353,7 @@ export default function WeatherPage() {
                       <Wind className="w-4 h-4 text-emerald-300" />
                       <span>Tốc độ gió</span>
                     </div>
-                    <p className="text-lg font-bold text-white">{weatherData.hien_tai?.gio_kmh || 12} km/h</p>
+                    <p className="text-lg font-bold text-white">{activeDay?.gio_kmh ?? 12} km/h</p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 space-y-1">
@@ -282,7 +361,9 @@ export default function WeatherPage() {
                       <Thermometer className="w-4 h-4 text-rose-300" />
                       <span>Cảm giác như</span>
                     </div>
-                    <p className="text-lg font-bold text-white">{weatherData.hien_tai?.nhiet_do || 28}°C</p>
+                    <p className="text-lg font-bold text-white">
+                      {activeDay?.cam_giac_nhu ?? activeDay?.nhiet_do ?? 28}°C
+                    </p>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 space-y-1">
@@ -312,6 +393,18 @@ export default function WeatherPage() {
                       <p className="text-xs text-teal-100 mt-0.5 leading-relaxed">
                         {advice.advice}
                       </p>
+                      {advice.tags && advice.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {advice.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2.5 py-0.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-medium text-white"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -328,27 +421,39 @@ export default function WeatherPage() {
               )}
             </div>
 
-            {/* DỰ BÁO THỜI TIẾT 5 NGÀY (UI_11) */}
+            {/* DỰ BÁO THỜI TIẾT THEO SỐ NGÀY API TRẢ VỀ */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    Dự báo 5 ngày tiếp theo tại {weatherData.tinh_thanh}
+                    Dự báo {weatherData.du_bao_5_ngay?.length || 0} ngày tại {weatherData.tinh_thanh}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Dữ liệu phân tích từng ngày hỗ trợ bạn sắp xếp lịch trình tham quan tối ưu
+                    Bấm vào từng ngày để xem chi tiết thời tiết & gợi ý trang phục
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                {weatherData.du_bao_5_ngay?.map((day, idx) => (
-                  <div
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(145px,1fr))] gap-3.5">
+                {weatherData.du_bao_5_ngay?.map((day, idx) => {
+                  const isSelected = selectedDayIndex === idx;
+                  return (
+                  <button
+                    type="button"
                     key={idx}
-                    className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-teal-400 hover:shadow-md transition text-center space-y-2.5 flex flex-col justify-between"
+                    onClick={() => setSelectedDayIndex(idx)}
+                    className={`p-4 rounded-2xl border transition text-center space-y-2.5 flex flex-col justify-between cursor-pointer ${
+                      isSelected
+                        ? 'bg-teal-50/50 border-teal-500 ring-2 ring-teal-500/20 shadow-md'
+                        : 'bg-white border-slate-200 shadow-xs hover:border-teal-400 hover:shadow-md'
+                    }`}
                   >
                     <div>
-                      <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg">
+                      <span
+                        className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                          isSelected ? 'bg-teal-600 text-white' : 'text-teal-700 bg-teal-50'
+                        }`}
+                      >
                         {idx === 0 ? 'Hôm nay' : idx === 1 ? 'Ngày mai' : `Ngày ${idx + 1}`}
                       </span>
                       <p className="text-[11px] text-slate-400 mt-2 font-mono">
@@ -388,8 +493,9 @@ export default function WeatherPage() {
                         <span>{day.gio_kmh || 10} km/h</span>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </button>
+                  );
+                })}
               </div>
             </div>
           </>

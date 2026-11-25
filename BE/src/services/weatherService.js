@@ -59,7 +59,7 @@ const fetchFromOpenMeteo = async (lat, lon, cityName) => {
       current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
       daily: 'weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_mean',
       timezone: 'Asia/Ho_Chi_Minh',
-      forecast_days: 5,
+      forecast_days: 7,
     },
     timeout: 8000,
   });
@@ -154,7 +154,6 @@ export const getWeatherForecast = async (lat, lon, cityName = 'Đà Nẵng') => 
             gio_kmh: Math.round(item.wind.speed * 3.6),
           });
         }
-        if (dailyForecasts.length >= 5) break;
       }
 
       const result = {

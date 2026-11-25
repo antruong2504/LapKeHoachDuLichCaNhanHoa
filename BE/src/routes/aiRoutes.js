@@ -2,6 +2,8 @@ import express from 'express';
 import {
   generateItinerary,
   regenerateDay,
+  optimizeBudget,
+  updateDraftDayStops,
   saveDraftToItinerary,
   getDraftById,
 } from '../controllers/aiController.js';
@@ -18,10 +20,14 @@ router.post('/generate-itinerary', generateItinerary);
 // 2. Tạo lại lịch trình cho 1 ngày cụ thể trong bản nháp
 router.post('/regenerate-day', regenerateDay);
 
+// 2.5. Tối ưu lại toàn bộ bản nháp cho vừa ngân sách
+router.post('/optimize-budget', optimizeBudget);
+
 // 3. Lưu bản nháp AI thành lịch trình chính thức
 router.post('/save-draft', saveDraftToItinerary);
 
-// 4. Lấy chi tiết bản nháp AI
+// 4. Lấy chi tiết & cập nhật nhanh từng ngày trong bản nháp AI
 router.get('/draft/:id', getDraftById);
+router.put('/draft/:id', updateDraftDayStops);
 
 export default router;
